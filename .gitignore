@@ -1,0 +1,26 @@
+# Python-generated files
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# Virtual environments
+.venv
+
+# Local secrets
+.env
+.env.*
+!.env.example
+
+# Large data files (downloaded, not committed)
+embeddings/
+embeddings_gemini/
+
+dataset/TMDB_movie_dataset_v11.csv
+# Generated plots
+*.png
+
+# IDE / tooling
+.commandcode/
