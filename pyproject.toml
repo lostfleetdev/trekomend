@@ -1,7 +1,7 @@
 [project]
-name = "recommend"
-version = "0.1.0"
-description = "TMDB movie embeddings with Qwen3-0.6B on Colab T4. Visualize, validate, and search similar movies locally."
+name = "trekomend"
+version = "0.2.0"
+description = "Embed 1.4M TMDB movies with Qwen3 on Colab T4. Search and compare locally via HDF5 + Ollama."
 requires-python = ">=3.12"
 dependencies = [
     "h5py>=3.12",
