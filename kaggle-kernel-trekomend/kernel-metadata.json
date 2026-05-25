@@ -1,0 +1,17 @@
+{
+  "id": "ramanbb/trekomend-v2-1024d-qwen3-embedding",
+  "title": "Trekomend v2 - 1024d TMDB Movie Embeddings (Qwen3-0.6B, Dual T4)",
+  "code_file": "trekomend_v2_1024d.ipynb",
+  "language": "python",
+  "kernel_type": "notebook",
+  "is_private": true,
+  "enable_gpu": true,
+  "enable_tpu": false,
+  "enable_internet": true,
+  "dataset_sources": [
+    "asaniczka/tmdb-movies-dataset-2023-930k-movies"
+  ],
+  "competition_sources": [],
+  "kernel_sources": [],
+  "model_sources": []
+}

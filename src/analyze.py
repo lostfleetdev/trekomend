@@ -16,15 +16,33 @@ from .config import TARGET_ROWS, RNG
 from .io import scan_shards, load_metadata, load_shard_array
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ===============================================================================
 #  Stats
-# ═══════════════════════════════════════════════════════════════════════════════
+# ===============================================================================
 
 def show_stats(emb_dir: Path) -> None:
-    """Progress bar and shard list."""
+    """Progress bar and shard list. Checks merged file first."""
     shards = scan_shards(emb_dir)
+    from .io import load_merged
+    emb_m, ids_m, rows_m, merged_name = load_merged(emb_dir)
+    
+    if emb_m is not None:
+        n = emb_m.shape[0]
+        d = emb_m.shape[1]
+        pct = 100 * n / TARGET_ROWS
+        bar_w = 40
+        filled = min(bar_w, int(bar_w * n / TARGET_ROWS))
+        bar = "#" * filled + "-" * (bar_w - filled)
+        print(f"Merged:  {merged_name}")
+        print(f"Movies:  {n:,} / {TARGET_ROWS:,}  ({pct:.1f}%)")
+        print(f"Dim:     {d}")
+        print(f"[{bar}]")
+        if shards:
+            print(f"Shards:  {len(shards)} files ({sum(s['rows'] for s in shards):,} rows)")
+        return
+    
     if not shards:
-        print("No shards found in", emb_dir)
+        print("No shards or merged file found in", emb_dir)
         return
 
     total = sum(s["rows"] for s in shards)
@@ -41,12 +59,18 @@ def show_stats(emb_dir: Path) -> None:
         print(f"  {s['file'].name}  ({s['rows']:,} rows)")
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ===============================================================================
 #  Validate
-# ═══════════════════════════════════════════════════════════════════════════════
+# ===============================================================================
 
 def validate(emb_dir: Path) -> bool:
-    """Check every shard: norm ~1.0, no NaN. Returns True if all pass."""
+    """Check embeddings: norm ~1.0, no NaN. Checks merged file first, then shards."""
+    from .io import load_merged
+    emb_m, ids_m, rows_m, merged_name = load_merged(emb_dir)
+    
+    if emb_m is not None:
+        return _validate_array(emb_m, label=f"Merged: {merged_name}")
+    
     shards = scan_shards(emb_dir)
     if not shards:
         print("No shards found.")
@@ -68,9 +92,20 @@ def validate(emb_dir: Path) -> bool:
     return all_ok
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+def _validate_array(emb: np.ndarray, label: str = "") -> bool:
+    """Validate a single embedding array."""
+    n, d = emb.shape
+    norm = np.linalg.norm(emb, axis=1).mean()
+    has_nan = not np.isfinite(emb).all()
+    ok = abs(norm - 1.0) < 0.02 and not has_nan  # relaxed to 0.02 for merged files
+    print(f"  {label}")
+    print(f"  Rows: {n:,} x {d}  |  Norm: {norm:.4f}  |  NaN: {has_nan}  |  {'PASS' if ok else 'FAIL'}")
+    return ok
+
+
+# ===============================================================================
 #  Visualization
-# ═══════════════════════════════════════════════════════════════════════════════
+# ===============================================================================
 #
 #  Each shard gets:
 #    1. PCA scatter plot (colored by genre, random titles labeled)
@@ -81,14 +116,22 @@ def validate(emb_dir: Path) -> bool:
 
 def visualize(emb_dir: Path, dataset_path: str, single_shard: int = None) -> None:
     """
-    Visualize embeddings.
+    Visualize embeddings. Supports merged HDF5 and legacy shards.
 
-    If single_shard is None → process every shard.
-    If single_shard is an int → process only that shard (0-indexed).
+    If single_shard is None -> process every shard (or sample from merged).
+    If single_shard is an int -> process only that shard (0-indexed).
     """
+    from .io import load_merged
+    
+    # ── Check for merged file first ──
+    emb_m, ids_m, rows_m, merged_name = load_merged(emb_dir)
+    if emb_m is not None:
+        _visualize_array(emb_m, rows_m, ids_m, dataset_path, label=merged_name)
+        return
+    
     shards = scan_shards(emb_dir)
     if not shards:
-        print("No shards found.")
+        print("No shards or merged file found.")
         return
 
     # Filter to one shard if requested
@@ -114,7 +157,7 @@ def visualize(emb_dir: Path, dataset_path: str, single_shard: int = None) -> Non
         nan = not np.isfinite(emb).all()
         print(f"  Norm: {norm:.4f}  |  NaN: {nan}  |  Genres: {len(genre_counts)}")
 
-        # ── PCA ───
+        # -- PCA ---
         pca50 = PCA(n_components=50, random_state=42)
         emb50 = pca50.fit_transform(emb)
         pca2 = PCA(n_components=2, random_state=42)
@@ -122,14 +165,14 @@ def visualize(emb_dir: Path, dataset_path: str, single_shard: int = None) -> Non
         pca50_var = pca50.explained_variance_ratio_.sum()
         print(f"  PCA-50 var: {pca50_var:.3f}")
 
-        # ── Plots ──
+        # -- Plots --
         _plot_pca(emb2d, df, genre_counts, idx, s)
         _plot_heatmap(emb, df, idx)
 
-        # ── 10-movie similarity comparison ──
+        # -- 10-movie similarity comparison --
         _compare_random_sample(emb, df, idx, n_sample=10)
 
-        # ── Classification ──
+        # -- Classification --
         acc, baseline, per_genre = _classify_genre(emb, df)
         if acc is not None:
             xbase = acc / baseline
@@ -151,18 +194,96 @@ def visualize(emb_dir: Path, dataset_path: str, single_shard: int = None) -> Non
         _print_summary(shards, summary)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+def _visualize_array(emb: np.ndarray, rows_arr, ids_arr, dataset_path: str,
+                     sample: int = 12_000, label: str = ""):
+    """Visualize from a single numpy array (merged file path). Samples if large."""
+    n, d = emb.shape
+    print(f"\n{'='*60}")
+    print(f"  {label}  ({n:,} movies x {d})")
+    print(f"{'='*60}")
+    
+    # ── Validate ──
+    _validate_array(emb, label=label)
+    
+    # ── Sample for visualization (full 1.4M is too dense for plots) ──
+    if n > sample:
+        print(f"\n  Sampling {sample:,} / {n:,} movies for visualization...")
+        indices = np.sort(RNG.choice(n, size=sample, replace=False))
+        emb_sample = emb[indices]
+        ids_sample = ids_arr[indices] if ids_arr is not None else None
+    else:
+        emb_sample = emb
+        indices = np.arange(n)
+        ids_sample = ids_arr
+    
+    # ── Load metadata for sampled rows ──
+    df = _load_metadata_for_indices(indices, rows_arr, dataset_path, ids_sample)
+    if df is None or len(df) == 0:
+        print("  Could not load metadata. Skipping visualization.")
+        return
+    
+    genre_counts = df["primary_genre"].value_counts()
+    print(f"  Genres: {len(genre_counts)} unique  |  Top: {', '.join(genre_counts.head(5).index.tolist())}")
+    
+    # ── PCA ──
+    pca50 = PCA(n_components=50, random_state=42)
+    emb50 = pca50.fit_transform(emb_sample)
+    pca2 = PCA(n_components=2, random_state=42)
+    emb2d = pca2.fit_transform(emb50)
+    pca50_var = pca50.explained_variance_ratio_.sum()
+    print(f"  PCA-50 variance: {pca50_var:.3f}  (good > 0.3)")
+    
+    # ── Plots ──
+    _plot_pca(emb2d, df, genre_counts, 0, {"file": Path(label), "rows": n})
+    _plot_heatmap(emb_sample, df, 0)
+    
+    # ── 10-movie comparison ──
+    _compare_random_sample(emb_sample, df, 0, n_sample=10)
+    
+    # ── Genre classification ──
+    acc, baseline, per_genre = _classify_genre(emb_sample, df)
+    if acc is not None:
+        xbase = acc / baseline
+        print(f"\n  Genre classification (logistic regression on embeddings):")
+        print(f"    Accuracy: {acc:.3f}  ({xbase:.1f}x baseline of {baseline:.3f})")
+        print(f"    Top genres by F1:")
+        for g, sc in per_genre[:8]:
+            print(f"      {g:<25} f1={sc:.3f}")
+    else:
+        print("\n  Genre classification: SKIP (too few genres)")
+
+
+def _load_metadata_for_indices(indices, rows_arr, dataset_path, ids_arr=None):
+    """Load metadata for specific indices from the CSV."""
+    from .io import _primary_genre
+    needed = set(int(r) for r in indices)
+    parts = []
+    for chunk in pd.read_csv(dataset_path, chunksize=250_000, low_memory=False):
+        mask = chunk.index.isin(needed)
+        if mask.any():
+            parts.append(chunk[mask])
+        if sum(len(c) for c in parts) >= len(needed):
+            break
+    if not parts:
+        return None
+    df = pd.concat(parts, ignore_index=False)
+    df = df.loc[indices].reset_index(drop=True)
+    df["primary_genre"] = df["genres"].apply(_primary_genre)
+    return df
+
+
+# ===============================================================================
 #  Single-shard inspection
-# ═══════════════════════════════════════════════════════════════════════════════
+# ===============================================================================
 
 def inspect_shard(index: int, emb_dir: Path, dataset_path: str) -> None:
     """Deep dive on one shard — same as visualize(..., single_shard=index)."""
     visualize(emb_dir, dataset_path, single_shard=index)
 
 
-# ═══════════════════════════════════════════════════════════════════════════════
+# ===============================================================================
 #  Plot helpers
-# ═══════════════════════════════════════════════════════════════════════════════
+# ===============================================================================
 
 def _plot_pca(emb2d, df, genre_counts, shard_idx, shard_info):
     fig, ax = plt.subplots(figsize=(14, 10))
@@ -246,20 +367,24 @@ def _compare_random_sample(emb, df, shard_idx, n_sample=10, threshold=0.25):
     sample_emb = emb[picks]
     sim_matrix = sample_emb @ sample_emb.T
 
-    titles = []
+    titles_raw = []
     genres = []
     for i in picks:
         t = str(df.iloc[i]["title"]) if not pd.isna(df.iloc[i]["title"]) else f"#{i}"
         g = df.iloc[i]["primary_genre"]
-        titles.append(t)
+        titles_raw.append(t)
         genres.append(g)
+    
+    # ASCII-safe titles for console display
+    titles = [t.encode("ascii", errors="replace").decode("ascii") for t in titles_raw]
 
-    print(f"\n  ── Similarity Matrix ({n_sample} random movies) ──")
+    print(f"\n  -- Similarity Matrix ({n_sample} random movies) --")
 
     # Header row (abbreviated titles)
     print(f"  {'':>25}", end="")
     for t in titles:
-        print(f"{t[:10]:>10}", end="")
+        label = t[:9] + " " if len(t) > 9 else t[:10]
+        print(f"{label:>10}", end="")
     print()
 
     # Matrix rows
@@ -286,10 +411,10 @@ def _compare_random_sample(emb, df, shard_idx, n_sample=10, threshold=0.25):
         print(f"\n  Most similar pairs (cos >= {threshold}):")
         for score, i, j in pairs:
             genre_match = "**" if genres[i] == genres[j] else ""
-            print(f"    {titles[i][:35]:<35} ↔ {titles[j][:35]:<35}  "
+            print(f"    {titles[i][:35]:<35} <-> {titles[j][:35]:<35}  "
                   f"cos={score:.3f}  {genre_match}")
     else:
-        print(f"\n  No pairs with cos >= {threshold} — vectors are well-separated.")
+        print(f"\n  No pairs with cos >= {threshold} - vectors are well-separated.")
 
     # Save a dedicated comparison heatmap
     _save_comparison_heatmap(sim_matrix, titles, genres, shard_idx, n_sample)

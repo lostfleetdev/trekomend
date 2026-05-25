@@ -15,12 +15,17 @@ wheels/
 !.env.example
 
 # Large data files (downloaded, not committed)
-embeddings/
-embeddings_gemini/
-
 dataset/TMDB_movie_dataset_v11.csv
+
+# Embeddings (generated, large binary files)
+embeddings/*.h5
+!embeddings/.gitkeep
+
 # Generated plots
 *.png
+
+# Kaggle kernel output directory (downloaded from Kaggle)
+trekomend_v2_1024d/
 
 # IDE / tooling
 .commandcode/

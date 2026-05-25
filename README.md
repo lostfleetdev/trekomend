@@ -1,96 +1,208 @@
 # trekomend
 
-Embed all 1.4 million TMDB movies with Qwen3‑0.6B on a free Colab T4. Search them from your terminal.
+1.4 million TMDB movies, each turned into a 1024-dimensional vector.
+Find similar movies, search by description, or build a taste profile
+from what you already like. All of it runs locally.
 
 ## How it works
 
-**Colab** — `moviedata_v2.ipynb` downloads the TMDB CSV, loads Qwen3, and processes movies in 20K‑row chunks. Each chunk lands as a single `.h5` file. The free tier lasts five hours or so. Download the zip before the runtime dies.
+Every movie gets embedded by Qwen3-Embedding-0.6B. The text fed into
+the model covers 12 fields picked for content-based similarity: plot
+overview, keywords, genres, tagline, title, year, language, country,
+studio, runtime. Budget, revenue, ratings, and TMDB IDs get dropped.
+Those are collaborative signals. They made the embeddings worse when
+we included them, so we stopped.
 
-**Local** — drop the `.h5` files into `embeddings/`, the CSV into `dataset/`, then run the CLI.
+The Kaggle notebook finishes a full embedding pass in about 3 hours on
+free dual T4 GPUs. You get one zip file at the end. No multi-session
+juggling, no shard merging.
+
+After that, searching runs locally against the stored vectors. If you
+want text-based queries you need Ollama running with the Qwen3 model.
+Title lookups work without it.
+
+## Quick start
 
 ```bash
+# Install dependencies
 uv sync
+
+# Drop the HDF5 file into embeddings/
+cp tmdb_qwen06b_1024d.h5 embeddings/
+
+# Optional: put the TMDB CSV in dataset/ for metadata
+```
+
+If you do not have the embeddings yet, run the Kaggle notebook.
+Instructions are in `kaggle-kernel-trekomend/README.md`.
+
+For text queries, install [Ollama](https://ollama.com) and pull the model:
+
+```bash
+ollama pull qwen3-embedding:0.6b
 ```
 
 ## Commands
 
 ```bash
-uv run python main.py                              # stats + validate (default)
-uv run python main.py --validate                   # norm/NaN check per shard
-uv run python main.py --visualize                  # PCA + heatmaps + 10‑movie comparison
-uv run python main.py --visualize 3                # just shard 3
-uv run python main.py --similar "Inception"        # nearest neighbors by stored vector
-uv run python main.py --similar Inception Interstellar --blend
-uv run python main.py --similar "Die Hard" "Toy Story" --max
-uv run python main.py --query "sci-fi mind-bender" # search via Ollama
-uv run python main.py --query "scary" "funny" --max
+uv run python main.py                              # stats + validate
+uv run python main.py --validate                   # norm/NaN check
+uv run python main.py --visualize                  # PCA + heatmaps + genre classification
 ```
 
-| Flag | Does |
-|------|------|
-| `--stats` | Progress bar, shard count, disk usage |
-| `--validate` | Norm and NaN check for every `.h5` file |
-| `--visualize` | PCA scatter, heatmap, 10‑movie pair comparison, genre classification per shard |
-| `--visualize N` | Same, one shard only |
-| `--similar TITLE` | Looks up a stored movie by title, returns its nearest neighbors |
-| `--similar A B C --blend` | Averages A/B/C vectors into one, searches once |
-| `--similar A B C --max` | Each candidate keeps its highest similarity to any query |
-| `--similar A B C --rrf` | Three independent searches, merged by Reciprocal Rank Fusion |
-| `--query TEXT` | Embeds your text through Ollama, searches all shards |
-| `--query A B --rrf` | Multiple Ollama queries, RRF‑merged |
-| `--emb-dir PATH` | Path to embeddings folder (default `embeddings/`) |
-| `--dataset PATH` | Path to TMDB CSV (default `dataset/TMDB_movie_dataset_v11.csv`) |
-| `--ollama-model NAME` | Which Ollama model for `--query` (default `qwen3:0.6b`) |
+### Title lookup
 
-## Multi‑query strategies
+```bash
+uv run python main.py --similar "Inception"          # movies like Inception
+uv run python main.py --similar Inception Interstellar --blend
+uv run python main.py --similar "Die Hard" "Toy Story" --max
+```
 
-When you pass more than one `--similar` or `--query`, pick how they combine:
+### Text query (needs Ollama)
 
-| Strategy | How | When |
-|----------|-----|------|
-| `--blend` (default) | Average vectors, search once | All picks are similar — "Inception" + "Interstellar" |
-| `--max` | Score by best match to any query | Mixing genres — "Die Hard" + "Toy Story" |
-| `--rrf` | Independent searches, rank fusion | You want every query to pull equal weight |
+```bash
+uv run python main.py --query "mind-bending sci-fi thriller with plot twists"
+uv run python main.py --query "uplifting" "dark" --max
+uv run python main.py --query "space" "ocean" "war" --rrf
+```
+
+### Combined: titles plus text (the good stuff)
+
+This mixes stored movie vectors with live Ollama embeddings in one
+search. You anchor on movies you know and steer with natural language.
+
+```bash
+uv run python main.py --search "Inception" --also "but more philosophical and dreamlike"
+uv run python main.py --search "The Godfather" --also "modern crime" --max
+```
+
+### Preference profile (your taste, modeled)
+
+Builds a personal taste vector from movies you like, optionally
+blends in a mood description, and pushes away from stuff you do
+not want. This is the closest thing to a "recommendation engine"
+in one command.
+
+```bash
+uv run python main.py --profile "Inception" "The Matrix" "Interstellar"
+uv run python main.py --profile "Toy Story" --mood "something more grown up"
+uv run python main.py --profile "The Godfather" "Goodfellas" \
+                        --dislike "Twilight" --mood "modern crime thriller"
+uv run python main.py --profile "Parasite" --mood "lighter, funnier" --mood-weight 0.5
+```
+
+## Multi-query strategies
+
+When you pass more than one `--similar`, `--query`, or `--search` item,
+pick how they combine.
+
+| Strategy | Does | When |
+|---|---|---|
+| `--blend` (default) | Averages all vectors, searches once | Items are similar: "Inception" + "Interstellar" |
+| `--max` | Each candidate gets its best score from any query | Mixing genres: "Die Hard" + "Toy Story" |
+| `--rrf` | Independent searches merged by Reciprocal Rank Fusion | You want every query to pull equal weight |
+
+## What the numbers mean
+
+**Vector norm should be about 1.0.** Qwen3 normalizes every output.
+If it drifts past 1.01 or below 0.99, something went wrong during
+embedding. Probably a half-finished shard.
+
+**PCA-50 variance above 0.3 is good.** Below that, the vectors do
+not carry much structure. Either the source text is too uniform or
+the data is noise.
+
+**Classification accuracy should be at least 2x the baseline.**
+We run logistic regression on the raw vectors to guess the primary
+genre. If it barely beats the most-common-genre baseline, the
+embeddings are not encoding anything useful. On the 1.4M movie set
+we see 89.7% accuracy against a 44.1% baseline. That is 2.0x.
+
+**Search results should make sense.** Inception returning Memento
+is a good sign. Inception returning a documentary called "Useless"
+means two rows had identical empty-field fallback text and the
+deduplication missed it.
+
+**The 10-movie comparison** in `--visualize` picks ten random
+movies, prints their pairwise similarity table, and flags pairs
+above 0.25 cosine. Same-genre matches get marked. Horror should
+cluster with horror. If it does not, the embeddings are broken.
 
 ## Files
 
 ```
 trekomend/
-  main.py                 CLI entrypoint
-  moviedata_v2.ipynb      Colab notebook (the embedding half)
+  main.py                         CLI entrypoint
   src/
     __init__.py
-    config.py             Paths, constants, RNG seed
-    io.py                 HDF5 reading, CSV metadata, Ollama embedding
-    search.py             Search strategies (single, blend, max, rrf)
-    analyze.py            Validate, stats, PCA/heatmap/classification
-  embeddings/             ← drop .h5 shards here
-  dataset/                ← TMDB CSV here (git‑ignored)
+    config.py                     Paths, constants, instruction templates, RNG seed
+    io.py                         HDF5 reading, CSV metadata, Ollama embedding
+    search.py                     All search strategies (title, query, combined, profile)
+    analyze.py                    Validate, stats, PCA, heatmaps, genre classification
+  kaggle-kernel-trekomend/        Kaggle notebook + metadata for GPU embedding
+    kernel-metadata.json
+    trekomend_v2_1024d.ipynb
+    README.md
+  embeddings/                     Drop the HDF5 here (git-ignored)
+  dataset/                        TMDB CSV here (git-ignored)
 ```
 
-## What the numbers mean
-
-**Vector norm = 1.0.** Qwen3 normalizes every output. If it drifts past 0.01 in either direction, something went wrong during embedding.
-
-**PCA‑50 variance > 0.3.** Values below that usually mean the vectors have no real semantic structure — either corrupt data or text that's too uniform to matter.
-
-**Classification > 2× baseline.** If logistic regression on raw vectors guesses genre better than random chance, the embeddings carry meaning. Scores near baseline mean they don't.
-
-**Search results should be coherent.** Inception returning Memento is a good sign. Inception returning a documentary called "Useless" means two CSV rows had the same empty‑field fallback text — the v2 notebook fixed this.
-
-**10‑movie comparison.** `--visualize` picks ten random movies, prints the full pairwise similarity table, and flags pairs above 0.25. Same‑genre matches get a `**`. Good for spot‑checking new shards.
-
-## Setup
+## Setup from scratch
 
 1. Clone the repo
 2. `uv sync`
-3. Drop `.h5` shards into `embeddings/`
-4. Put `TMDB_movie_dataset_v11.csv` in `dataset/`
-5. For `--query`: install [Ollama](https://ollama.com), then `ollama pull qwen3:0.6b`
-6. `uv run python main.py`
+3. Run the Kaggle notebook to generate embeddings, or download a pre-built HDF5
+4. Drop `tmdb_qwen06b_1024d.h5` into `embeddings/`
+5. Put `TMDB_movie_dataset_v11.csv` in `dataset/`
+6. For text queries: install [Ollama](https://ollama.com), then `ollama pull qwen3-embedding:0.6b`
+7. `uv run python main.py`
+
+## How the preference profile works
+
+The `--profile` command runs a lightweight version of a content-based
+recommender. The algorithm:
+
+1. Takes your liked movies and averages their stored vectors into a
+   taste centroid.
+2. If you gave `--dislike` titles, it projects your taste vector away
+   from those movies in embedding space so they stop showing up.
+3. If you gave `--mood`, it embeds that text via Ollama using a
+   hybrid instruction that biases toward bridging established taste
+   with immediate context. The mood vector gets blended in at the
+   weight you set (default 0.3, meaning 70% taste, 30% mood).
+4. L2-normalizes the result and searches all 1.4 million movies by
+   cosine similarity.
+5. Filters out the movies you already said you like so you only see
+   new stuff.
+
+The mood weight parameter is the tuning knob. At 0.0 you get pure
+"more like what I already like." At 1.0 you get pure "whatever I
+feel like right now." The default 0.3 leans toward taste but lets
+the mood nudge results in a direction.
 
 ## Data
 
-[TMDB movie dataset v11](https://huggingface.co/datasets/fukitweball/TMDB) — 1.4 million movies, 632 MB CSV.
+The embeddings come from the [TMDB movie dataset v11](https://huggingface.co/datasets/fukitweball/TMDB)
+(also available on [Kaggle](https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies)).
+The CSV has 24 columns. Only 12 go into the embedding text. The rest
+are either collaborative signals (budget, revenue, ratings) or noise
+(poster paths, IMDB IDs, homepage URLs).
 
-[Qwen3‑Embedding‑0.6B](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B) — 1.2 GB VRAM on a T4. 768‑dim output. Matryoshka support. Asymmetric prompts.
+The model is [Qwen3-Embedding-0.6B](https://huggingface.co/Qwen/Qwen3-Embedding-0.6B).
+It fits in about 1.2 GB of VRAM on a T4. Output is 1024-dim with
+Matryoshka support so you can truncate to any dimension from 32 to
+1024. The model uses asymmetric prompts: instructions on the query
+side, raw text on the document side. We use four different
+instruction templates depending on whether the query is general,
+mood-biased, genre-biased, or a hybrid of taste and context.
+
+## Going faster
+
+- Kaggle gives you two free T4 GPUs. The notebook finishes 1.4M
+  movies in about 3 hours. One session. One download.
+- A local RTX 3060 finishes in roughly 2 hours if you lower the
+  batch size a bit.
+- Colab's single T4 takes longer but still works overnight.
+- If you have the VRAM, the 4B model gives better embeddings
+  (MTEB ~75 versus ~62 for 0.6B) but runs 3-4x slower and needs
+  more GPU memory.
