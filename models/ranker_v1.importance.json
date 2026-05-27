@@ -1,0 +1,17 @@
+{
+  "cosine_sim": 1335.0,
+  "genre_jaccard": 812.0,
+  "genre_match_count": 146.0,
+  "year_diff_abs": 733.0,
+  "year_diff_bucket": 71.0,
+  "popularity_percentile": 500.0,
+  "embedding_norm_candidate": 0.0,
+  "same_language": 147.0,
+  "keyword_jaccard": 459.0,
+  "vote_average_candidate": 824.0,
+  "vote_average_query": 349.0,
+  "rating_diff": 466.0,
+  "runtime_ratio": 106.0,
+  "same_primary_genre": 1.0,
+  "embedding_norm_query": 9.0
+}

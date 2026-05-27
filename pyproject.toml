@@ -5,11 +5,17 @@ description = "Embed 1.4M TMDB movies with Qwen3 on Colab T4. Search and compare
 requires-python = ">=3.12"
 dependencies = [
     "h5py>=3.12",
+    "ipython>=9.13.0",
     "matplotlib>=3.10",
     "numpy>=2.4",
     "pandas>=3.0",
+    "qdrant-client>=1.18.0",
     "scikit-learn>=1.8",
     "tqdm>=4.67",
+    "faiss-cpu>=1.9.0",
+    "fastapi>=0.115.0",
+    "uvicorn[standard]>=0.30.0",
+    "lightgbm>=4.6.0",
 ]
 
 [project.optional-dependencies]

@@ -14,18 +14,14 @@ wheels/
 .env.*
 !.env.example
 
-# Large data files (downloaded, not committed)
-dataset/TMDB_movie_dataset_v11.csv
+# Large data files (HuggingFace-hosted, not committed)
+dataset/
+new-kaggle-output/
+embeddings/
 
-# Embeddings (generated, large binary files)
-embeddings/*.h5
-!embeddings/.gitkeep
-
-# Generated plots
+# Generated plots / temp output
 *.png
-
-# Kaggle kernel output directory (downloaded from Kaggle)
-trekomend_v2_1024d/
+verification_results.json
 
 # IDE / tooling
 .commandcode/
