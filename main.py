@@ -10,7 +10,7 @@ The job queue is handled by a separate worker process (src/worker.py).
 This file only serves the API.
 
 Start the server:
-    uv run uvicorn main:app --host 127.0.0.1 --port 8080 --workers 3 --proxy-headers
+    uv run uvicorn main:app --host 127.0.0.1 --port 6767 --workers 3 --proxy-headers
 
 Or just:
     uv run python main.py
@@ -32,7 +32,7 @@ from src.config import (
     PRODUCTION_MODE,
 )
 from src.api_read import router as read_router, set_read_state
-from src.api_recommend import router as recommend_router, set_recommend_state
+from src.api_recommend import router as recommend_router, set_recommend_state, set_redis_available
 from src.ratelimit import RateLimitMiddleware
 
 
@@ -116,6 +116,17 @@ async def lifespan(app: FastAPI):
     set_read_state(searcher, feature_builder, lightgbm_model)
     set_recommend_state(searcher, hdf5_path)
 
+    # Check Redis availability
+    try:
+        from src.jobs import get_redis
+        r = get_redis()
+        r.ping()
+        set_redis_available(True)
+        print("  Redis: connected — recommendations will use job queue")
+    except Exception:
+        set_redis_available(False)
+        print("  Redis: not available — recommendations run synchronously")
+
     yield
 
     if searcher:
@@ -180,7 +191,7 @@ if __name__ == "__main__":
     uvicorn.run(
         "main:app",
         host="127.0.0.1",
-        port=8080,
+        port=6767,
         proxy_headers=True,
         log_level="info",
     )

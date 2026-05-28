@@ -1,11 +1,9 @@
 """
-api_recommend.py — Expensive recommendation endpoints with job queue.
+api_recommend.py — Recommendation endpoints with optional job queue.
 
-These endpoints submit jobs to Redis and return 202 Accepted immediately.
-The actual FAISS + Phase 2 pipeline runs in a separate worker process.
-
-Validation (movie existence, input bounds) happens synchronously before
-the job is created — the user gets immediate 400/404 for bad input.
+When Redis is available: submits jobs to the queue, returns 202 with job_id.
+When Redis is unavailable (local dev): runs recommendations synchronously,
+returns 200 with results directly.
 
 Endpoints:
     POST /api/recommend/similar    Movies like a given title
@@ -13,10 +11,11 @@ Endpoints:
     POST /api/recommend/profile    Profile from liked/disliked films + mood
     POST /api/recommend/diverse    Maximum diversity mode (DPP)
     POST /api/recommend/explore    Serendipity and novelty
-    GET  /api/jobs/{job_id}        Poll job status and retrieve results
+    GET  /api/jobs/{job_id}        Poll job status (only when queue is active)
 """
 from __future__ import annotations
 
+import time
 from typing import Any
 
 from fastapi import APIRouter, HTTPException
@@ -33,6 +32,7 @@ router = APIRouter(prefix="/api")
 
 _searcher = None
 _hdf5_path: str = ""
+_redis_available: bool = False
 
 
 def set_recommend_state(searcher, hdf5_path: str = ""):
@@ -40,6 +40,80 @@ def set_recommend_state(searcher, hdf5_path: str = ""):
     global _searcher, _hdf5_path
     _searcher = searcher
     _hdf5_path = hdf5_path
+
+
+def set_redis_available(available: bool):
+    """Called by main.py after checking Redis connectivity."""
+    global _redis_available
+    _redis_available = available
+
+
+# ============================================================================
+# Redis check
+# ============================================================================
+
+def _check_redis() -> bool:
+    """Return True if Redis is reachable and jobs can be queued."""
+    global _redis_available
+    if not _redis_available:
+        return False
+    try:
+        from .jobs import get_redis
+        r = get_redis()
+        r.ping()
+        _redis_available = True
+        return True
+    except Exception:
+        _redis_available = False
+        return False
+
+
+# ============================================================================
+# Synchronous fallback (no Redis)
+# ============================================================================
+
+def _run_sync(job_type: str, payload: dict) -> list[dict]:
+    """
+    Run a recommendation synchronously using the worker's processor functions.
+    This is the fallback when Redis is unavailable (local dev).
+    """
+    import src.worker as worker
+
+    # Wire up the worker's globals with the API's state
+    worker.searcher = _searcher
+    worker.hdf5_path = _hdf5_path
+    worker.phase2_loaded = True  # API already loaded Phase 2
+
+    # Import Phase 2 modules from the API's state
+    from . import api_read
+    worker.feature_builder = api_read._feature_builder
+    worker.lightgbm_model = api_read._lightgbm_model
+
+    # Lazy-import diversity modules
+    try:
+        from .diversity import GenreRoundRobin, DPPSelector, RoundRobinConfig, DPPConfig
+        from .config import (
+            GENRE_MAX_PER_GENRE, GENRE_MIN_UNIQUE, SERENDIPITY_POSITION,
+            DPP_RANK, DPP_LAMBDA_QD,
+        )
+        if worker.genre_round_robin is None:
+            rr_cfg = RoundRobinConfig(
+                max_per_genre=GENRE_MAX_PER_GENRE,
+                min_unique_genres=GENRE_MIN_UNIQUE,
+                serendipity_position=SERENDIPITY_POSITION,
+            )
+            worker.genre_round_robin = GenreRoundRobin(_searcher._db, config=rr_cfg)
+        if worker.dpp_selector is None:
+            dpp_cfg = DPPConfig(rank=DPP_RANK, lambda_qd=DPP_LAMBDA_QD, kernel_mode="full")
+            worker.dpp_selector = DPPSelector(config=dpp_cfg)
+    except Exception:
+        pass
+
+    processor = worker.PROCESSORS.get(job_type)
+    if processor is None:
+        raise ValueError(f"Unknown recommendation type: {job_type}")
+
+    return processor(payload)
 
 
 # ============================================================================
@@ -84,18 +158,6 @@ class ExploreRequest(BaseModel):
     nprobe: int | None = Field(default=None, ge=1, le=2048)
 
 
-class MovieResult(BaseModel):
-    rank: int
-    tmdb_id: int
-    title: str
-    primary_genre: str
-    genres: str | None = None
-    year: int | None = None
-    overview: str | None = None
-    vote_average: float | None = None
-    score: float | None = None
-
-
 # ============================================================================
 # Validation helpers
 # ============================================================================
@@ -124,103 +186,109 @@ def _validate_movies_exist(titles: list[str]) -> list[dict]:
 
 
 # ============================================================================
-# Recommendation endpoints (job queue)
+# Unified dispatch: queue if Redis, sync if not
 # ============================================================================
 
-@router.post(
-    "/recommend/similar",
-    status_code=202,
-    response_model=dict[str, Any],
-)
+def _dispatch(job_type: str, payload: dict, sync_msg: str) -> dict[str, Any]:
+    """
+    Queue a job if Redis is available, otherwise run synchronously.
+    Returns a response dict with either job info or direct results.
+    """
+    if _check_redis():
+        try:
+            job_id = create_job(job_type, payload)
+            return {
+                "job_id": job_id,
+                "status": "queued",
+                "type": job_type,
+                "message": f"Queued {job_type} recommendation",
+                "mode": "queue",
+            }
+        except Exception:
+            pass
+
+    # Synchronous fallback (no Redis)
+    start = time.time()
+    try:
+        results = _run_sync(job_type, payload)
+        elapsed = time.time() - start
+        return {
+            "job_id": None,
+            "status": "completed",
+            "type": job_type,
+            "message": sync_msg,
+            "mode": "sync",
+            "elapsed_seconds": round(elapsed, 2),
+            "results": results,
+        }
+    except ValueError as e:
+        raise HTTPException(400, str(e))
+    except Exception as e:
+        raise HTTPException(500, f"Recommendation failed: {type(e).__name__}: {e}")
+
+
+# ============================================================================
+# Recommendation endpoints
+# ============================================================================
+
+@router.post("/recommend/similar", response_model=dict[str, Any])
 def recommend_similar(req: SimilarRequest) -> dict[str, Any]:
-    """Movies similar to a given title. Validates input, queues the job."""
+    """Movies similar to a given title."""
     _validate_movie_exists(req.title)
-
-    job_id = create_job("similar", req.model_dump())
-    return {
-        "job_id": job_id,
-        "status": "queued",
-        "type": "similar",
-        "message": f"Queued recommendation for '{req.title}'",
-    }
+    return _dispatch(
+        "similar",
+        req.model_dump(),
+        f"Found movies similar to '{req.title}'",
+    )
 
 
-@router.post(
-    "/recommend/query",
-    status_code=202,
-    response_model=dict[str, Any],
-)
+@router.post("/recommend/query", response_model=dict[str, Any])
 def recommend_query(req: QueryRequest) -> dict[str, Any]:
     """Movies matching a text description. Uses Ollama for embedding."""
     if not req.query.strip():
         raise HTTPException(400, "Query cannot be empty")
-
-    job_id = create_job("query", req.model_dump())
-    return {
-        "job_id": job_id,
-        "status": "queued",
-        "type": "query",
-        "message": f"Queued text search: '{req.query[:50]}...' (uses Ollama, may take 3-10s)",
-    }
+    return _dispatch(
+        "query",
+        req.model_dump(),
+        f"Found movies for: '{req.query[:50]}'",
+    )
 
 
-@router.post(
-    "/recommend/profile",
-    status_code=202,
-    response_model=dict[str, Any],
-)
+@router.post("/recommend/profile", response_model=dict[str, Any])
 def recommend_profile(req: ProfileRequest) -> dict[str, Any]:
     """Profile-based recommendations from liked movies, mood, and dislikes."""
     _validate_movies_exist(req.liked)
-    # Disliked movies are optional — skip validation if a dislike is not found
-
-    job_id = create_job("profile", req.model_dump())
-    return {
-        "job_id": job_id,
-        "status": "queued",
-        "type": "profile",
-        "message": f"Queued profile from {len(req.liked)} liked movies",
-    }
+    return _dispatch(
+        "profile",
+        req.model_dump(),
+        f"Built profile from {len(req.liked)} liked movies",
+    )
 
 
-@router.post(
-    "/recommend/diverse",
-    status_code=202,
-    response_model=dict[str, Any],
-)
+@router.post("/recommend/diverse", response_model=dict[str, Any])
 def recommend_diverse(req: DiverseRequest) -> dict[str, Any]:
     """Maximum diversity mode. Lower lambda_qd for more variety."""
     _validate_movie_exists(req.title)
-
-    job_id = create_job("diverse", req.model_dump())
-    return {
-        "job_id": job_id,
-        "status": "queued",
-        "type": "diverse",
-        "message": f"Queued diverse recommendation for '{req.title}'",
-    }
+    return _dispatch(
+        "diverse",
+        req.model_dump(),
+        f"Found diverse picks for '{req.title}'",
+    )
 
 
-@router.post(
-    "/recommend/explore",
-    status_code=202,
-    response_model=dict[str, Any],
-)
+@router.post("/recommend/explore", response_model=dict[str, Any])
 def recommend_explore(req: ExploreRequest) -> dict[str, Any]:
     """Serendipity mode. Favors less popular, less obvious movies."""
     _validate_movies_exist(req.liked)
-
-    job_id = create_job("explore", req.model_dump())
-    return {
-        "job_id": job_id,
-        "status": "queued",
-        "type": "explore",
-        "message": f"Queued serendipity from {len(req.liked)} liked movies",
-    }
+    return _dispatch(
+        "explore",
+        req.model_dump(),
+        f"Found serendipity picks from {len(req.liked)} liked movies",
+    )
 
 
 # ============================================================================
-# Job status polling
+# Job status polling (only meaningful with Redis queue)
 # ============================================================================
 
 @router.get("/jobs/{job_id}")

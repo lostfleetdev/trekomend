@@ -1,0 +1,268 @@
+---
+const links = [
+  { href: '/', label: 'Home' },
+  { href: '/recommend/', label: 'Recommend' },
+  { href: '/how-it-works/', label: 'How it works' },
+];
+
+const current = Astro.url.pathname;
+---
+
+<nav class="nav">
+  <div class="nav__inner container">
+    <a href="/" class="nav__logo" aria-label="trekomend home">
+      <img src="/icon-192.png" alt="" class="nav__logo-icon" width="28" height="28" />
+      <span class="nav__logo-text">trekomend</span>
+    </a>
+
+    <ul class="nav__links">
+      {links.map(({ href, label }) => (
+        <li>
+          <a
+            href={href}
+            class:list={['nav__link', { 'nav__link--active': current === href }]}
+          >
+            {label}
+          </a>
+        </li>
+      ))}
+    </ul>
+
+    <button class="nav__mobile-toggle" aria-label="Menu" aria-expanded="false">
+      <span class="nav__burger"></span>
+    </button>
+  </div>
+</nav>
+
+<style>
+  .nav {
+    position: sticky;
+    top: 0;
+    z-index: 50;
+    border-bottom: var(--border-w) solid var(--border);
+    background: var(--bg);
+  }
+
+  .nav__inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 64px;
+  }
+
+  .nav__logo {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-weight: 700;
+    font-size: 1.1rem;
+    letter-spacing: -0.02em;
+  }
+
+  .nav__logo-icon {
+    width: 28px;
+    height: 28px;
+    border-radius: var(--radius);
+    object-fit: contain;
+  }
+
+  .nav__links {
+    display: none;
+    list-style: none;
+    gap: 0.25rem;
+    align-items: center;
+  }
+
+  @media (min-width: 768px) {
+    .nav__links { display: flex; }
+  }
+
+  .nav__link {
+    padding: 0.4rem 0.75rem;
+    font-size: 0.85rem;
+    font-weight: 500;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    border-bottom: var(--border-w) solid transparent;
+    border-radius: var(--radius);
+    transition: border-color 0.2s, color 0.2s;
+  }
+
+  .nav__link:hover {
+    color: var(--accent);
+  }
+
+  .nav__link--active {
+    border-bottom-color: var(--accent);
+    color: var(--accent);
+  }
+
+  .nav__cta-item {
+    margin-left: 0.5rem;
+  }
+
+  .nav__cta {
+    display: inline-flex;
+    align-items: center;
+    padding: 0.35rem 0.85rem;
+    font-family: var(--font-sans);
+    font-size: 0.8rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    background: var(--accent);
+    color: var(--bg);
+    border: var(--border-w) solid var(--accent);
+    border-radius: var(--radius);
+    transition: background 0.15s, transform 0.1s;
+  }
+
+  .nav__cta:hover {
+    background: var(--accent-dim);
+    border-color: var(--accent-dim);
+  }
+
+  .nav__cta:active {
+    transform: scale(0.97);
+  }
+
+  .nav__mobile-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 40px;
+    height: 40px;
+    background: none;
+    border: var(--border-w) solid var(--border);
+    border-radius: var(--radius);
+    cursor: pointer;
+  }
+
+  @media (min-width: 768px) {
+    .nav__mobile-toggle { display: none; }
+  }
+
+  .nav__burger {
+    display: block;
+    width: 18px;
+    height: 2px;
+    background: var(--text);
+    position: relative;
+    transition: background 0.2s;
+  }
+
+  .nav__burger::before,
+  .nav__burger::after {
+    content: '';
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 2px;
+    background: var(--text);
+    transition: transform 0.25s ease, top 0.25s ease;
+  }
+
+  .nav__burger::before { top: -6px; }
+  .nav__burger::after  { top: 6px; }
+
+  /* Mobile menu — slide-down animation */
+  .nav__links--mobile-open {
+    display: flex;
+    flex-direction: column;
+    position: absolute;
+    top: 64px;
+    left: 0;
+    right: 0;
+    background: var(--bg);
+    border-bottom: var(--border-w) solid var(--border);
+    padding: var(--gutter);
+    gap: 0.25rem;
+    transform: translateY(-8px);
+    opacity: 0;
+    pointer-events: none;
+    transition: transform 0.25s ease, opacity 0.2s ease;
+    z-index: 49;
+  }
+
+  .nav__links--mobile-open.is-open {
+    transform: translateY(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .nav__links--mobile-open .nav__link {
+    padding: 0.65rem 0;
+    font-size: 1rem;
+    border: none;
+  }
+
+  .nav__links--mobile-open .nav__cta-item {
+    margin-left: 0;
+    margin-top: 0.5rem;
+  }
+
+  .nav__links--mobile-open .nav__cta {
+    width: 100%;
+    justify-content: center;
+    padding: 0.65rem 1rem;
+  }
+
+  .nav__mobile-toggle[aria-expanded="true"] .nav__burger {
+    background: transparent;
+  }
+
+  .nav__mobile-toggle[aria-expanded="true"] .nav__burger::before {
+    transform: rotate(45deg);
+    top: 0;
+  }
+
+  .nav__mobile-toggle[aria-expanded="true"] .nav__burger::after {
+    transform: rotate(-45deg);
+    top: 0;
+  }
+</style>
+
+<!-- Mobile menu clone (rendered by JS on small screens) -->
+<script>
+  const toggle = document.querySelector('.nav__mobile-toggle') as HTMLButtonElement | null;
+  const desktopLinks = document.querySelector('.nav__links') as HTMLElement | null;
+
+  // Create mobile menu by cloning the desktop links
+  let mobileMenu: HTMLElement | null = null;
+
+  function initMobileMenu() {
+    if (mobileMenu || !desktopLinks) return;
+    mobileMenu = desktopLinks.cloneNode(true) as HTMLElement;
+    mobileMenu.classList.add('nav__links--mobile-open');
+    mobileMenu.removeAttribute('role');
+    // Insert after the nav__inner
+    const nav = document.querySelector('.nav');
+    nav?.appendChild(mobileMenu);
+
+    // Close on link click
+    mobileMenu.querySelectorAll('.nav__link').forEach((link) => {
+      link.addEventListener('click', closeMenu);
+    });
+  }
+
+  function closeMenu() {
+    toggle?.setAttribute('aria-expanded', 'false');
+    mobileMenu?.classList.remove('is-open');
+  }
+
+  function openMenu() {
+    toggle?.setAttribute('aria-expanded', 'true');
+    mobileMenu?.classList.add('is-open');
+  }
+
+  initMobileMenu();
+
+  toggle?.addEventListener('click', () => {
+    const expanded = toggle.getAttribute('aria-expanded') === 'true';
+    if (expanded) {
+      closeMenu();
+    } else {
+      openMenu();
+    }
+  });
+</script>

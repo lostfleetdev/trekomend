@@ -1,0 +1,297 @@
+---
+interface Props {
+  title: string;
+  description?: string;
+}
+
+const {
+  title,
+  description = 'Movie recommendations using FAISS + Qwen3 embeddings. 912k films, vector search, no signup. A hobby project by Raman Bhise.',
+} = Astro.props;
+---
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content={description} />
+  <link rel="icon" href="/favicon.ico" sizes="any">
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png">
+  <title>{title} — trekomend</title>
+
+  <style is:global>
+    /* ============================================================
+       TREKOMEND — Neo-Brutalist Swiss + Acid Punk
+       ============================================================ */
+
+    /* --- Reset --- */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    /* --- Tokens --- */
+    :root {
+      --bg:        #0a0a0a;
+      --bg-raised: #141414;
+      --bg-card:   #1a1a1a;
+      --border:    #2a2a2a;
+      --border-hi: #3a3a3a;
+      --text:      #e8e8e8;
+      --text-dim:  #888;
+      --text-mute: #555;
+      --accent:    #b4ff39;
+      --accent-dim:#7abf00;
+      --danger:    #ff4444;
+      --radius:    2px;
+      --border-w:  2px;
+      --font-sans: 'Space Grotesk', system-ui, sans-serif;
+      --font-mono: 'IBM Plex Mono', 'Courier New', monospace;
+      --max-w:     1200px;
+      --gutter:    1.5rem;
+    }
+
+    @media (min-width: 768px) {
+      :root { --gutter: 2rem; }
+    }
+
+    /* --- Base --- */
+    html {
+      font-family: var(--font-sans);
+      background:  var(--bg);
+      color:       var(--text);
+      line-height: 1.5;
+      -webkit-font-smoothing: antialiased;
+      scroll-behavior: smooth;
+    }
+
+    body {
+      min-height: 100dvh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    img, video { max-width: 100%; height: auto; display: block; }
+    a { color: inherit; text-decoration: none; }
+
+    /* --- Typography --- */
+    h1, h2, h3, h4 {
+      font-weight: 700;
+      line-height: 1.1;
+      letter-spacing: -0.03em;
+    }
+
+    h1 { font-size: clamp(2rem, 5vw, 3.5rem); }
+    h2 { font-size: clamp(1.5rem, 3vw, 2.25rem); }
+    h3 { font-size: clamp(1.1rem, 2vw, 1.5rem); }
+
+    code, .mono {
+      font-family: var(--font-mono);
+      font-size: 0.875em;
+    }
+
+    /* --- Utility --- */
+    .container {
+      width: 100%;
+      max-width: var(--max-w);
+      margin-inline: auto;
+      padding-inline: var(--gutter);
+    }
+
+    .sr-only {
+      position: absolute;
+      width: 1px; height: 1px;
+      padding: 0; margin: -1px;
+      overflow: hidden;
+      clip: rect(0,0,0,0);
+      white-space: nowrap;
+      border: 0;
+    }
+
+    /* --- Buttons --- */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      padding: 0.65rem 1.25rem;
+      font-family: var(--font-sans);
+      font-weight: 600;
+      font-size: 0.875rem;
+      letter-spacing: 0.02em;
+      text-transform: uppercase;
+      border: var(--border-w) solid var(--text);
+      border-radius: var(--radius);
+      background: transparent;
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, transform 0.1s;
+      user-select: none;
+    }
+
+    .btn:hover {
+      background: var(--text);
+      color: var(--bg);
+    }
+
+    .btn:active {
+      transform: scale(0.97);
+    }
+
+    .btn--accent {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .btn--accent:hover {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    .btn--filled {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: var(--bg);
+    }
+
+    .btn--filled:hover {
+      background: var(--accent-dim);
+      border-color: var(--accent-dim);
+    }
+
+    /* --- Tags --- */
+    .tag {
+      display: inline-block;
+      padding: 0.2rem 0.6rem;
+      font-family: var(--font-mono);
+      font-size: 0.7rem;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      border: 1px solid var(--border-hi);
+      border-radius: var(--radius);
+      color: var(--text-dim);
+    }
+
+    .tag--accent {
+      border-color: var(--accent-dim);
+      color: var(--accent);
+    }
+
+    /* --- Movie cards --- */
+    .mcard {
+      border: var(--border-w) solid var(--border);
+      border-radius: var(--radius);
+      background: var(--bg-card);
+      overflow: hidden;
+      transition: border-color 0.2s, transform 0.2s;
+    }
+
+    .mcard:hover {
+      border-color: var(--accent);
+      transform: translateY(-2px);
+    }
+
+    .mcard__poster-wrap {
+      display: block;
+      position: relative;
+      aspect-ratio: 2/3;
+      overflow: hidden;
+      background: var(--bg-raised);
+    }
+
+    .mcard__poster {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .mcard__rank {
+      position: absolute;
+      top: 0.4rem;
+      left: 0.4rem;
+      width: 1.6rem;
+      height: 1.6rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      border: var(--border-w) solid var(--border);
+      border-radius: var(--radius);
+      font-size: 0.65rem;
+      font-weight: 600;
+    }
+
+    .mcard__match {
+      position: absolute;
+      bottom: 0.4rem;
+      right: 0.4rem;
+      padding: 0.1rem 0.4rem;
+      background: var(--bg);
+      border: var(--border-w) solid var(--accent);
+      border-radius: var(--radius);
+      font-family: var(--font-mono);
+      font-size: 0.65rem;
+      font-weight: 600;
+      color: var(--accent);
+    }
+
+    .mcard__info {
+      padding: 0.6rem 0.75rem 0.75rem;
+    }
+
+    .mcard__title {
+      font-size: 0.85rem;
+      font-weight: 600;
+      line-height: 1.25;
+      margin-bottom: 0.3rem;
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+    }
+
+    .mcard__meta {
+      display: flex;
+      align-items: center;
+      gap: 0.35rem;
+      font-size: 0.75rem;
+      color: var(--text-dim);
+      flex-wrap: wrap;
+    }
+
+    .mcard__dot {
+      color: var(--text-mute);
+      font-size: 0.6rem;
+    }
+
+    /* --- Reduced Motion --- */
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        transition-duration: 0.01ms !important;
+      }
+    }
+
+    /* --- Selection --- */
+    ::selection {
+      background: var(--accent);
+      color: var(--bg);
+    }
+
+    /* --- Scrollbar --- */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--border-hi); border-radius: 3px; }
+    ::-webkit-scrollbar-thumb:hover { background: var(--text-mute); }
+  </style>
+
+  <script defer src="https://cloud.umami.is/script.js" data-website-id="7195076f-52c7-4f03-82cd-916124b55114"></script>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link
+    href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Space+Grotesk:wght@400;500;600;700&display=swap"
+    rel="stylesheet"
+  />
+</head>
+<body>
+  <slot />
+</body>
+</html>

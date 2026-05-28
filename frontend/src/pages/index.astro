@@ -1,0 +1,412 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+---
+<Base title="Home">
+  <Nav />
+
+  <section class="hero">
+    <div class="hero__inner container">
+      <div class="hero__badge mono">FAISS + Qwen3 embeddings</div>
+      <h1 class="hero__title">
+        Pick a film.<br/>
+        <span class="hero__accent">Get recommendations.</span>
+      </h1>
+      <p class="hero__sub">
+        912k films indexed with vector search. No signup, no tracking, no nonsense. Just type something and see what comes back.
+      </p>
+
+      <div class="hero__search-wrap">
+        <label for="hero-search" class="sr-only">Search movies</label>
+        <div class="hero__search">
+          <input
+            type="text"
+            id="hero-search"
+            class="hero__search-input"
+            placeholder="Try 'Inception' or 'dark sci-fi with good pacing'"
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <div class="hero__search-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="11" cy="11" r="8"/>
+              <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+            </svg>
+          </div>
+          <kbd class="hero__search-kbd mono" aria-hidden="true">/</kbd>
+        </div>
+      </div>
+
+      <div class="hero__actions">
+        <button class="btn btn--filled" id="hero-cta" type="button">Get recommendations</button>
+        <a href="/how-it-works/" class="btn btn--accent">How it works</a>
+      </div>
+
+      <!-- Inline results (hidden until a search runs) -->
+      <div class="hero__results" id="hero-results" style="display:none;">
+        <div class="hero__results-status mono" id="hero-results-status"></div>
+        <div class="hero__results-grid" id="hero-results-grid"></div>
+        <div class="hero__results-more">
+          <a href="/recommend/" class="btn btn--accent" id="hero-results-link">See more on Recommend page</a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features -->
+  <section class="features">
+    <div class="container">
+      <div class="features__grid">
+        <div class="feature">
+          <h3 class="feature__title">Vector search</h3>
+          <p class="feature__desc">
+            Every movie gets turned into a 1024-dimensional vector using Qwen3.
+            Instead of matching keywords, the system understands meaning.
+            Search "lonely astronaut" and you get Solaris, Interstellar, and Moon.
+          </p>
+        </div>
+        <div class="feature">
+          <h3 class="feature__title">Two modes</h3>
+          <p class="feature__desc">
+            Type a movie title for similar picks. Or describe a mood, a vibe, a weirdly specific
+            scenario in plain English. The system figures out what you mean.
+          </p>
+        </div>
+        <div class="feature">
+          <h3 class="feature__title">Learned re-ranking</h3>
+          <p class="feature__desc">
+            Raw vector similarity is just the starting point. A LightGBM model re-scores candidates
+            using genre balance, popularity, year, and rating. Trained on what people actually pick,
+            not what a cosine distance says they should pick.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <Footer />
+</Base>
+
+<style>
+  .hero {
+    border-bottom: var(--border-w) solid var(--border);
+    padding: 2.5rem 0 3rem;
+  }
+
+  @media (min-width: 768px) {
+    .hero { padding: 4rem 0 4.5rem; }
+  }
+
+  .hero__inner {
+    max-width: 640px;
+  }
+
+  .hero__badge {
+    display: inline-block;
+    padding: 0.2rem 0.55rem;
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border: 1px solid var(--accent-dim);
+    border-radius: var(--radius);
+    color: var(--accent);
+    margin-bottom: 1.25rem;
+  }
+
+  .hero__title {
+    margin-bottom: 1rem;
+  }
+
+  .hero__accent {
+    color: var(--accent);
+  }
+
+  .hero__sub {
+    font-size: 0.95rem;
+    line-height: 1.5;
+    color: var(--text-dim);
+    max-width: 480px;
+    margin-bottom: 1.5rem;
+  }
+
+  .hero__search-wrap {
+    margin-bottom: 1.25rem;
+  }
+
+  .hero__search {
+    position: relative;
+    display: flex;
+    align-items: center;
+    max-width: 480px;
+    width: 100%;
+  }
+
+  .hero__search-input {
+    width: 100%;
+    padding: 0.7rem 2.5rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    background: var(--bg-raised);
+    border: var(--border-w) solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    outline: none;
+    transition: border-color 0.15s;
+  }
+
+  .hero__search-input::placeholder { color: var(--text-mute); }
+  .hero__search-input:focus { border-color: var(--accent); }
+
+  .hero__search-icon {
+    position: absolute;
+    left: 0.75rem;
+    color: var(--text-mute);
+    pointer-events: none;
+    display: flex;
+    align-items: center;
+  }
+
+  .hero__search-kbd {
+    position: absolute;
+    right: 0.6rem;
+    padding: 0.1rem 0.4rem;
+    font-size: 0.7rem;
+    color: var(--text-mute);
+    border: 1px solid var(--border);
+    border-radius: 2px;
+    pointer-events: none;
+    line-height: 1.4;
+  }
+
+  .hero__search-input:focus ~ .hero__search-kbd { display: none; }
+
+  .hero__actions {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.75rem;
+  }
+
+  @media (max-width: 480px) {
+    .hero__actions .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  /* --- Inline results --- */
+  .hero__results {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: var(--border-w) solid var(--border);
+  }
+
+  .hero__results-status {
+    font-size: 0.8rem;
+    color: var(--text-mute);
+    margin-bottom: 1rem;
+  }
+
+  .hero__results-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 1rem;
+  }
+
+  @media (min-width: 480px) {
+    .hero__results-grid {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1.25rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .hero__results-grid {
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+    }
+  }
+
+  .hero__results-more {
+    margin-top: 1.25rem;
+  }
+
+  /* --- Features --- */
+  .features {
+    padding: 2.5rem 0;
+    border-bottom: var(--border-w) solid var(--border);
+  }
+
+  @media (min-width: 768px) {
+    .features { padding: 3.5rem 0; }
+  }
+
+  .features__grid {
+    display: grid;
+    gap: 1.5rem;
+  }
+
+  @media (min-width: 768px) {
+    .features__grid {
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2rem;
+    }
+  }
+
+  .feature {
+    padding: 1.25rem;
+    border: var(--border-w) solid var(--border);
+    border-radius: var(--radius);
+    background: var(--bg-raised);
+  }
+
+  .feature__title {
+    font-size: 0.95rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    margin-bottom: 0.6rem;
+    color: var(--accent);
+  }
+
+  .feature__desc {
+    font-size: 0.85rem;
+    line-height: 1.6;
+    color: var(--text-dim);
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+  import { recommendSimilar, recommendQuery, pollJob, movieId, posterUrl } from '../lib/api';
+  import type { MovieResult } from '../lib/api';
+
+  // Hero entrance
+  const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
+  tl.from('.hero__badge', { y: 16, opacity: 0, duration: 0.4 })
+    .from('.hero__title', { y: 24, opacity: 0, duration: 0.5 }, '-=0.2')
+    .from('.hero__sub', { y: 16, opacity: 0, duration: 0.4 }, '-=0.2')
+    .from('.hero__search-wrap', { y: 16, opacity: 0, duration: 0.4 }, '-=0.2')
+    .from('.hero__actions', { y: 12, opacity: 0, duration: 0.3 }, '-=0.1');
+
+  // Elements
+  const heroInput = document.getElementById('hero-search') as HTMLInputElement | null;
+  const heroCta = document.getElementById('hero-cta') as HTMLButtonElement | null;
+  const resultsWrap = document.getElementById('hero-results') as HTMLDivElement | null;
+  const resultsGrid = document.getElementById('hero-results-grid') as HTMLDivElement | null;
+  const resultsStatus = document.getElementById('hero-results-status') as HTMLDivElement | null;
+  const resultsLink = document.getElementById('hero-results-link') as HTMLAnchorElement | null;
+
+  function isNaturalLanguage(text: string): boolean {
+    const words = text.split(/\s+/).length;
+    if (words > 5) return true;
+    const descWords = ['mood', 'vibe', 'something', 'feel like', 'want', 'looking for', 'about', 'with', 'good', 'dark', 'funny', 'scary', 'similar'];
+    const lower = text.toLowerCase();
+    return descWords.some((w) => lower.includes(w));
+  }
+
+  function renderHeroResults(movies: MovieResult[]) {
+    if (!resultsGrid) return;
+    resultsGrid.innerHTML = '';
+
+    if (movies.length === 0) {
+      resultsGrid.innerHTML = '<p style="color:var(--text-mute);font-size:0.85rem;">No results. Try a different search.</p>';
+      return;
+    }
+
+    for (const m of movies) {
+      const mid = movieId(m);
+      const pUrl = posterUrl(m);
+      const matchPct = m.score ? Math.round(m.score * 100) : null;
+      const card = document.createElement('article');
+      card.className = 'mcard';
+      card.innerHTML = `
+        <a href="https://www.themoviedb.org/movie/${mid}" target="_blank" rel="noopener" class="mcard__poster-wrap">
+          ${m.rank ? `<span class="mcard__rank mono">${m.rank}</span>` : ''}
+          <img
+            class="mcard__poster"
+            src="${pUrl}"
+            alt="Poster for ${m.title}"
+            loading="lazy"
+            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22342%22 height=%22513%22 fill=%22%231a1a1a%22%3E%3Crect width=%22342%22 height=%22513%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23555%22 font-family=%22monospace%22 font-size=%2214%22%3ENo Poster%3C/text%3E%3C/svg%3E'"
+          />
+          ${matchPct !== null ? `<span class="mcard__match">${matchPct}%</span>` : ''}
+        </a>
+        <div class="mcard__info">
+          <h3 class="mcard__title">${m.title}</h3>
+          <div class="mcard__meta">
+            ${m.year ? `<span class="mono">${m.year}</span>` : ''}
+            ${m.year && m.vote_average ? '<span class="mcard__dot">·</span>' : ''}
+            ${m.vote_average ? `<span class="mono">${m.vote_average.toFixed(1)}</span>` : ''}
+            <span class="mcard__dot">·</span>
+            <span class="tag tag--accent">${m.primary_genre || 'Film'}</span>
+          </div>
+        </div>
+      `;
+      resultsGrid.appendChild(card);
+    }
+
+    gsap.from(resultsGrid.querySelectorAll('.mcard'), {
+      y: 24,
+      opacity: 0,
+      duration: 0.35,
+      stagger: 0.05,
+      ease: 'power2.out',
+    });
+  }
+
+  async function runSearch() {
+    const q = heroInput?.value.trim();
+    if (!q) return;
+
+    if (!resultsWrap || !resultsStatus) return;
+    resultsWrap.style.display = 'block';
+    resultsStatus.textContent = 'Searching...';
+    if (resultsGrid) resultsGrid.innerHTML = '';
+
+    // Update the "see more" link with the right params
+    const mode = isNaturalLanguage(q) ? 'query' : 'similar';
+    if (resultsLink) {
+      resultsLink.href = `/recommend/?mode=${mode}&q=${encodeURIComponent(q)}`;
+    }
+
+    try {
+      const res = mode === 'query'
+        ? await recommendQuery(q, 12)
+        : await recommendSimilar(q, 12);
+
+      let movies: MovieResult[];
+
+      if (res.mode === 'sync') {
+        movies = res.results || [];
+      } else if (res.mode === 'queue' && res.job_id) {
+        resultsStatus.textContent = 'Processing...';
+        movies = await pollJob(res.job_id, (s) => {
+          if (s.status === 'running') resultsStatus.textContent = 'Running...';
+        }, 30000, 500);
+      } else {
+        movies = res.results || [];
+      }
+
+      resultsStatus.textContent = `${movies.length} results for "${q}"`;
+      renderHeroResults(movies);
+    } catch (e) {
+      resultsStatus.textContent = `Error: ${e instanceof Error ? e.message : 'Something went wrong'}`;
+    }
+  }
+
+  // CTA click
+  heroCta?.addEventListener('click', runSearch);
+
+  // Enter key in search input
+  heroInput?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') runSearch();
+  });
+
+  // Global / shortcut
+  document.addEventListener('keydown', (e) => {
+    if (e.key === '/' && !['INPUT', 'TEXTAREA', 'SELECT'].includes((e.target as HTMLElement).tagName)) {
+      e.preventDefault();
+      heroInput?.focus();
+    }
+  });
+</script>

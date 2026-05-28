@@ -1,0 +1,57 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+import '../styles/how-it-works.css';
+import Step01 from '../components/hw/Step01.astro';
+import Step02 from '../components/hw/Step02.astro';
+import Step03 from '../components/hw/Step03.astro';
+import Step04 from '../components/hw/Step04.astro';
+import Step05 from '../components/hw/Step05.astro';
+import Step06 from '../components/hw/Step06.astro';
+import Step07 from '../components/hw/Step07.astro';
+import Step08 from '../components/hw/Step08.astro';
+---
+
+<Base title="How it works">
+  <Nav />
+
+  <section class="hw-hero">
+    <div class="container">
+      <div class="hw-hero__text">
+        <h1>How it works</h1>
+        <p>Every movie becomes a vector. FAISS searches 1.4 million of them in about 15 milliseconds. A LightGBM model re-ranks the results and a round-robin mixer keeps the genres varied. No GPU at serving time. No user data. 200 MB of RAM on a $6 VPS.</p>
+        <p class="hw-hero__verdict mono">is it efficient? heck no. is it cool? heck yeah.</p>
+      </div>
+
+      <div class="hw-flow">
+        <div class="hw-flow__node hw-flow__node--accent"><span class="hw-flow__label">QUERY</span><span class="hw-flow__sub mono">title / text / profile</span></div>
+        <div class="hw-flow__arrow"><svg viewBox="0 0 20 10" width="20" height="10"><path d="M0 5 h12" stroke="#b4ff39" stroke-width="1.5" stroke-dasharray="3 3" class="hw-anim-flow"/><path d="M10 2 l4 3 -4 3z" fill="#b4ff39"/></svg></div>
+        <div class="hw-flow__node"><span class="hw-flow__label">EMBED</span><span class="hw-flow__sub mono">Qwen3-0.6B</span></div>
+        <div class="hw-flow__arrow"><svg viewBox="0 0 20 10" width="20" height="10"><path d="M0 5 h12" stroke="#b4ff39" stroke-width="1.5" stroke-dasharray="3 3" class="hw-anim-flow"/><path d="M10 2 l4 3 -4 3z" fill="#b4ff39"/></svg></div>
+        <div class="hw-flow__node"><span class="hw-flow__label">FAISS</span><span class="hw-flow__sub mono">1.4M vectors</span></div>
+        <div class="hw-flow__arrow"><svg viewBox="0 0 20 10" width="20" height="10"><path d="M0 5 h12" stroke="#b4ff39" stroke-width="1.5" stroke-dasharray="3 3" class="hw-anim-flow"/><path d="M10 2 l4 3 -4 3z" fill="#b4ff39"/></svg></div>
+        <div class="hw-flow__node"><span class="hw-flow__label">RE-RANK</span><span class="hw-flow__sub mono">LightGBM</span></div>
+        <div class="hw-flow__arrow"><svg viewBox="0 0 20 10" width="20" height="10"><path d="M0 5 h12" stroke="#b4ff39" stroke-width="1.5" stroke-dasharray="3 3" class="hw-anim-flow"/><path d="M10 2 l4 3 -4 3z" fill="#b4ff39"/></svg></div>
+        <div class="hw-flow__node"><span class="hw-flow__label">GENRE MIX</span><span class="hw-flow__sub mono">round-robin</span></div>
+        <div class="hw-flow__arrow"><svg viewBox="0 0 20 10" width="20" height="10"><path d="M0 5 h12" stroke="#b4ff39" stroke-width="1.5" stroke-dasharray="3 3" class="hw-anim-flow"/><path d="M10 2 l4 3 -4 3z" fill="#b4ff39"/></svg></div>
+        <div class="hw-flow__node hw-flow__node--accent"><span class="hw-flow__label">RESULTS</span><span class="hw-flow__sub mono">12 movies</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hw-body">
+    <div class="container">
+      <Step01 />
+      <Step02 />
+      <Step03 />
+      <Step04 />
+      <Step05 />
+      <Step06 />
+      <Step07 />
+      <Step08 />
+    </div>
+  </section>
+
+  <Footer />
+</Base>

@@ -1,0 +1,13 @@
+<div class="hw-step">
+  <div class="hw-step__marker"><span class="hw-step__num">01</span><svg class="hw-step__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><ellipse cx="8" cy="6" rx="4" ry="2" fill="none" stroke="#b4ff39" stroke-width="1.5"/><path d="M4 6v5c0 1.1 1.8 2 4 2s4-.9 4-2V6" fill="none" stroke="#b4ff39" stroke-width="1.5"/><path d="M4 11v4c0 1.1 1.8 2 4 2s4-.9 4-2v-4" fill="none" stroke="#b4ff39" stroke-width="1.5"/><ellipse cx="18" cy="17" rx="4" ry="2" fill="none" stroke="#b4ff39" stroke-width="1.5"/><path d="M14 17v4c0 1.1 1.8 2 4 2s4-.9 4-2v-4" fill="none" stroke="#b4ff39" stroke-width="1.5"/></svg></div>
+  <div class="hw-step__body">
+    <h2>Where the data comes from</h2>
+    <p>Everything starts with the <strong>TMDB movie dataset v11</strong> on Kaggle. 1.4 million movies, 24 columns per row. I only use 12 of them: plot, keywords, genres, tagline, title, year, language, country, studios, runtime, rating, and original title. The rest are collaborative signals like vote counts and popularity scores. Including those actually made the embeddings worse, so they got cut.</p>
+    <div class="hw-sources">
+      <div class="hw-source"><span class="hw-source__label mono">Source</span><span class="hw-source__val"><a href="https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies/data" target="_blank" rel="noopener" style="color:var(--accent-dim);text-decoration:underline;text-underline-offset:2px;">TMDB Movies Dataset (Kaggle)</a></span></div>
+      <div class="hw-source"><span class="hw-source__label mono">Size</span><span class="hw-source__val">1,400,000+ movies</span></div>
+      <div class="hw-source"><span class="hw-source__label mono">Fields used</span><span class="hw-source__val">12 of 24 columns</span></div>
+      <div class="hw-source"><span class="hw-source__label mono">Dropped</span><span class="hw-source__val">budget, revenue, vote counts, popularity, external IDs</span></div>
+    </div>
+  </div>
+</div>

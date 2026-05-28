@@ -8,7 +8,6 @@ Endpoints:
     GET  /api/health                Liveness check
     GET  /api/stats                 Index stats
     GET  /api/movies/search         Full-text search (FTS5)
-    GET  /api/movies/browse         Browse with filters
     GET  /api/movies/genres         All primary genres
     GET  /api/movies/{tmdb_id}      Single movie by TMDB ID
     GET  /api/ranker/features       LightGBM feature importance
@@ -71,26 +70,6 @@ def search_movies(
     if not _searcher:
         raise HTTPException(503, "Searcher not initialized")
     return _searcher.search_text(q, limit=limit)
-
-
-@router.get("/movies/browse")
-def browse_movies(
-    genre: str | None = Query(default=None),
-    year_min: int | None = Query(default=None),
-    year_max: int | None = Query(default=None),
-    min_votes: int | None = Query(default=None),
-    min_rating: float | None = Query(default=None),
-    limit: int = Query(default=50, ge=1, le=200),
-    offset: int = Query(default=0, ge=0),
-) -> list[dict[str, Any]]:
-    """Browse movies with optional filters on genre, year, and rating."""
-    if not _searcher:
-        raise HTTPException(503, "Searcher not initialized")
-    return _searcher.browse(
-        genre=genre, year_min=year_min, year_max=year_max,
-        min_votes=min_votes, min_rating=min_rating,
-        limit=limit, offset=offset,
-    )
 
 
 @router.get("/movies/genres")

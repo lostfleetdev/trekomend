@@ -5,7 +5,7 @@ build/
 dist/
 wheels/
 *.egg-info
-
+.vscode/
 # Virtual environments
 .venv
 *.key
@@ -21,9 +21,7 @@ new-kaggle-output/
 embeddings/
 
 # Generated plots / temp output
-*.png
 verification_results.json
-PLAN.md
 # IDE / tooling
 .commandcode/
 
@@ -34,3 +32,6 @@ frontend/.astro/
 
 # Redis dump
 dump.rdb
+
+nginx/
+PLAN.md

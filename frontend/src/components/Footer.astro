@@ -1,0 +1,144 @@
+---
+const year = new Date().getFullYear();
+---
+<footer class="footer">
+  <div class="footer__inner container">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <span class="footer__logo">trekomend</span>
+        <span class="footer__tag">a weekend project that got out of hand</span>
+      </div>
+      <p class="footer__disclaimer">
+        This is a hobby project. Not affiliated with TMDB, any studio, or any streaming service.
+        Built because I wanted better movie recs and nobody was going to build them for me.
+      </p>
+    </div>
+
+    <div class="footer__links">
+      <a href="https://github.com/lostfleetdev" target="_blank" rel="noopener" class="footer__link">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
+        <span>lostfleetdev</span>
+      </a>
+      <a href="mailto:ramanbhise1@gmail.com" class="footer__link">
+        <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7"/></svg>
+        <span>ramanbhise1@gmail.com</span>
+      </a>
+    </div>
+
+    <div class="footer__bottom">
+      <span class="footer__copy mono">{year}</span>
+      <span class="footer__sep">/</span>
+      <span class="footer__tech mono">FAISS + Qwen3 + LightGBM</span>
+      <span class="footer__sep">/</span>
+      <span class="footer__tech mono">no signup</span>
+      <span class="footer__sep">/</span>
+      <span class="footer__tmdb">
+        Movie data from
+        <a href="https://www.kaggle.com/datasets/asaniczka/tmdb-movies-dataset-2023-930k-movies/data" target="_blank" rel="noopener">TMDB (Kaggle)</a>,
+        posters from
+        <a href="https://www.themoviedb.org/" target="_blank" rel="noopener">TMDB</a>
+      </span>
+    </div>
+  </div>
+</footer>
+
+<style>
+  .footer {
+    margin-top: auto;
+    border-top: var(--border-w) solid var(--border);
+    background: var(--bg);
+    padding: 1.75rem 0 1.5rem;
+  }
+
+  .footer__inner {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+  }
+
+  .footer__top {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+  }
+
+  .footer__brand {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .footer__logo {
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: -0.01em;
+  }
+
+  .footer__tag {
+    font-size: 0.75rem;
+    color: var(--text-mute);
+  }
+
+  .footer__disclaimer {
+    font-size: 0.75rem;
+    color: var(--text-mute);
+    line-height: 1.5;
+    max-width: 560px;
+  }
+
+  .footer__links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.25rem;
+  }
+
+  .footer__link {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-family: var(--font-mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    transition: color 0.15s;
+  }
+
+  .footer__link:hover {
+    color: var(--accent);
+  }
+
+  .footer__bottom {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--border);
+  }
+
+  .footer__copy,
+  .footer__tech {
+    font-size: 0.7rem;
+    color: var(--text-mute);
+  }
+
+  .footer__sep {
+    color: var(--border-hi);
+    font-size: 0.7rem;
+  }
+
+  .footer__tmdb {
+    font-size: 0.7rem;
+    color: var(--text-mute);
+  }
+
+  .footer__tmdb a {
+    color: var(--accent-dim);
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
+
+  .footer__tmdb a:hover {
+    color: var(--accent);
+  }
+</style>

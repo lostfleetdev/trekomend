@@ -55,7 +55,11 @@ def create_job(
     Returns:
         The job UUID string.
     """
-    r = redis_client or get_redis()
+    try:
+        r = redis_client or get_redis()
+    except Exception:
+        raise RuntimeError("Redis is not available. Recommendation queue is offline.")
+
     job_id = str(uuid.uuid4())
     now = time.time()
 
@@ -91,8 +95,11 @@ def get_job(job_id: str, redis_client: redis.Redis | None = None) -> dict[str, A
         Dict with job fields, or None if job doesn't exist (expired or never created).
         The 'payload' and 'results' fields are JSON-decoded if non-empty.
     """
-    r = redis_client or get_redis()
-    data = r.hgetall(f"job:{job_id}")
+    try:
+        r = redis_client or get_redis()
+        data = r.hgetall(f"job:{job_id}")
+    except (redis.ConnectionError, redis.TimeoutError, ConnectionRefusedError):
+        return None
     if not data:
         return None
 

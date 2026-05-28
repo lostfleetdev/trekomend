@@ -1,0 +1,21 @@
+<div class="hw-step">
+  <div class="hw-step__marker"><span class="hw-step__num">05</span><svg class="hw-step__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="3" width="8" height="8" rx="1" fill="none" stroke="#b4ff39" stroke-width="1.5"/><rect x="13" y="3" width="8" height="8" rx="1" fill="none" stroke="#b4ff39" stroke-width="1.5"/><rect x="3" y="13" width="8" height="8" rx="1" fill="none" stroke="#b4ff39" stroke-width="1.5"/><rect x="13" y="13" width="8" height="8" rx="1" fill="none" stroke="#b4ff39" stroke-width="1.5"/></svg></div>
+  <div class="hw-step__body">
+    <h2>What the re-ranker looks at</h2>
+    <p>LightGBM scores each of the 200 FAISS candidates using 15 features. It trains on 60,000 pseudo-labeled pairs from 240 seed queries. Takes under a second on CPU. The whole model is 585 KB. Validation R-squared is 0.999 on held-out queries, which honestly surprised me.</p>
+    <div class="hw-bars">
+      <div class="hw-bar"><span class="hw-bar__name mono">cosine similarity</span><div class="hw-bar__track"><div class="hw-bar__fill" style="width:100%"></div></div><span class="hw-bar__val mono">1335</span></div>
+      <div class="hw-bar"><span class="hw-bar__name mono">vote average</span><div class="hw-bar__track"><div class="hw-bar__fill" style="width:61.7%"></div></div><span class="hw-bar__val mono">824</span></div>
+      <div class="hw-bar"><span class="hw-bar__name mono">genre overlap</span><div class="hw-bar__track"><div class="hw-bar__fill" style="width:60.8%"></div></div><span class="hw-bar__val mono">812</span></div>
+      <div class="hw-bar"><span class="hw-bar__name mono">year difference</span><div class="hw-bar__track"><div class="hw-bar__fill" style="width:54.9%"></div></div><span class="hw-bar__val mono">733</span></div>
+      <div class="hw-bar"><span class="hw-bar__name mono">popularity pct</span><div class="hw-bar__track"><div class="hw-bar__fill" style="width:37.4%"></div></div><span class="hw-bar__val mono">500</span></div>
+    </div>
+    <h3 class="hw-subtitle">Before and after genre mixing</h3>
+    <p>The round-robin layer groups candidates by primary genre, sorts each group by LightGBM score, and interleaves them. It caps any genre at three appearances and reserves position 8 as a serendipity slot, because sometimes you want to be surprised.</p>
+    <div class="hw-genre-compare">
+      <div class="hw-genre-compare__col"><span class="hw-genre-compare__label mono">without mixing</span><div class="hw-genre-compare__tags"><span class="hw-gtag">Action</span><span class="hw-gtag">Action</span><span class="hw-gtag">Action</span><span class="hw-gtag">Sci-Fi</span><span class="hw-gtag">Action</span><span class="hw-gtag">Action</span><span class="hw-gtag">Sci-Fi</span><span class="hw-gtag">Action</span><span class="hw-gtag">Thriller</span><span class="hw-gtag">Action</span><span class="hw-gtag">Sci-Fi</span><span class="hw-gtag">Action</span></div><span class="hw-genre-compare__stat mono">2-4 unique genres</span></div>
+      <span class="hw-genre-compare__vs">&rarr;</span>
+      <div class="hw-genre-compare__col"><span class="hw-genre-compare__label mono">with mixing</span><div class="hw-genre-compare__tags"><span class="hw-gtag hw-gtag--good">Action</span><span class="hw-gtag hw-gtag--good">Drama</span><span class="hw-gtag hw-gtag--good">Sci-Fi</span><span class="hw-gtag hw-gtag--good">Comedy</span><span class="hw-gtag hw-gtag--good">Thriller</span><span class="hw-gtag hw-gtag--good">Action</span><span class="hw-gtag hw-gtag--good">Horror</span><span class="hw-gtag hw-gtag--surprise">Animation</span><span class="hw-gtag hw-gtag--good">Drama</span><span class="hw-gtag hw-gtag--good">Sci-Fi</span><span class="hw-gtag hw-gtag--good">Action</span><span class="hw-gtag hw-gtag--good">Romance</span></div><span class="hw-genre-compare__stat hw-genre-compare__stat--good mono">6-9 unique genres</span></div>
+    </div>
+  </div>
+</div>

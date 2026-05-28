@@ -1,0 +1,13 @@
+<div class="hw-step">
+  <div class="hw-step__marker"><span class="hw-step__num">06</span><svg class="hw-step__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="7" r="3.5" fill="none" stroke="#b4ff39" stroke-width="1.5"/><path d="M5 20c0-4 3.1-7 7-7s7 3 7 7" fill="none" stroke="#b4ff39" stroke-width="1.5" stroke-linecap="round"/></svg></div>
+  <div class="hw-step__body">
+    <h2>Building a taste profile</h2>
+    <p>Give the system a list of movies you like and it averages all their vectors into a taste centroid. That centroid is basically "you" in vector space. You can also push away from movies you hate and blend in a mood description if you want.</p>
+    <div class="hw-profile-steps">
+      <div class="hw-ps"><span class="hw-ps__num mono">1</span><div><strong>Average liked movies</strong><p>Take the vectors of movies you listed and compute their mean. That gives one vector that captures your overall taste.</p></div></div>
+      <div class="hw-ps"><span class="hw-ps__num mono">2</span><div><strong>Push away from dislikes</strong><p>If you listed movies to avoid, the system computes their centroid and subtracts a fraction of it. Default weight is 0.3.</p></div></div>
+      <div class="hw-ps"><span class="hw-ps__num mono">3</span><div><strong>Blend in mood</strong><p>A text description like "something chill" gets embedded via Ollama and blends in at 30% weight.</p></div></div>
+      <div class="hw-ps"><span class="hw-ps__num mono">4</span><div><strong>Search and rerank</strong><p>Normalize the final vector, search FAISS, filter out already-liked movies, run the re-ranking pipeline.</p></div></div>
+    </div>
+  </div>
+</div>

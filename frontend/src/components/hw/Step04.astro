@@ -1,0 +1,16 @@
+<div class="hw-step">
+  <div class="hw-step__marker"><span class="hw-step__num">04</span><svg class="hw-step__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="6" fill="none" stroke="#b4ff39" stroke-width="1.5"/><line x1="14.5" y1="14.5" x2="20" y2="20" stroke="#b4ff39" stroke-width="2" stroke-linecap="round"/></svg></div>
+  <div class="hw-step__body">
+    <h2>From your query to 12 movies in 16 milliseconds</h2>
+    <p>Every recommendation endpoint follows the same pipeline. Your input gets resolved into a vector, FAISS finds the top 200 candidates, then two post-retrieval layers do their thing before handing back 12 results.</p>
+    <div class="hw-pipeline-blocks">
+      <div class="hw-pb"><strong>FAISS</strong><span>top 200</span><span class="hw-pb__time mono">~15ms</span></div>
+      <div class="hw-pb__conn"><svg viewBox="0 0 30 12" width="30" height="12"><path d="M0 6 h20" stroke="#b4ff39" stroke-width="1.5" stroke-dasharray="3 3" class="hw-anim-flow"/><path d="M18 3 l6 3 -6 3z" fill="#b4ff39"/></svg><span class="hw-pb__t mono">+1ms</span></div>
+      <div class="hw-pb hw-pb--accent"><strong>LightGBM</strong><span>re-rank</span><span class="hw-pb__time mono">+1ms</span></div>
+      <div class="hw-pb__conn"><svg viewBox="0 0 30 12" width="30" height="12"><path d="M0 6 h20" stroke="#b4ff39" stroke-width="1.5" stroke-dasharray="3 3" class="hw-anim-flow"/><path d="M18 3 l6 3 -6 3z" fill="#b4ff39"/></svg><span class="hw-pb__t mono">+0.3ms</span></div>
+      <div class="hw-pb"><strong>Round-Robin</strong><span>genre mix</span><span class="hw-pb__time mono">+0.3ms</span></div>
+      <div class="hw-pb__conn"><svg viewBox="0 0 30 12" width="30" height="12"><path d="M0 6 h20" stroke="#b4ff39" stroke-width="1.5" stroke-dasharray="3 3" class="hw-anim-flow"/><path d="M18 3 l6 3 -6 3z" fill="#b4ff39"/></svg></div>
+      <div class="hw-pb hw-pb--result"><strong>12 MOVIES</strong><span>6-9 genres</span><span class="hw-pb__time mono">~16ms</span></div>
+    </div>
+  </div>
+</div>

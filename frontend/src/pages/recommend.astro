@@ -1,0 +1,550 @@
+---
+import Base from '../layouts/Base.astro';
+import Nav from '../components/Nav.astro';
+import Footer from '../components/Footer.astro';
+---
+<Base title="Recommend">
+  <Nav />
+
+  <section class="rec">
+    <div class="container">
+      <div class="rec__header">
+        <h1>Get recommendations</h1>
+        <p class="rec__sub">
+          Tell the engine what you're in the mood for. It does the heavy lifting.
+        </p>
+      </div>
+
+      <!-- Mode Tabs -->
+      <div class="rec__tabs" role="tablist">
+        <button class="rec__tab rec__tab--active" role="tab" data-tab="similar" aria-selected="true">
+          Similar to
+        </button>
+        <button class="rec__tab" role="tab" data-tab="query">
+          Text search
+        </button>
+        <button class="rec__tab" role="tab" data-tab="profile">
+          Profile
+        </button>
+        <button class="rec__tab" role="tab" data-tab="explore">
+          Serendipity
+        </button>
+      </div>
+
+      <!-- Tab: Similar -->
+      <div class="rec__panel rec__panel--active" data-panel="similar">
+        <div class="rec__form">
+          <label class="rec__label mono" for="similar-title">Movie title</label>
+          <div class="rec__input-row">
+            <input
+              id="similar-title"
+              type="text"
+              class="rec__input"
+              placeholder="e.g. Blade Runner 2049"
+              autocomplete="off"
+            />
+            <button class="btn btn--filled rec__submit" data-action="similar">Go</button>
+          </div>
+          <p class="rec__hint">
+            Finds movies with similar vectors, re-ranks them, and mixes the genres so you don't end up with 12 superhero films.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab: Text Search -->
+      <div class="rec__panel" data-panel="query">
+        <div class="rec__form">
+          <label class="rec__label mono" for="query-text">Describe what you want</label>
+          <div class="rec__input-row">
+            <input
+              id="query-text"
+              type="text"
+              class="rec__input"
+              placeholder="e.g. slow burn thriller with a twist ending"
+              autocomplete="off"
+            />
+            <button class="btn btn--filled rec__submit" data-action="query">Go</button>
+          </div>
+          <p class="rec__hint">
+            Describe what you want in plain English. The model embeds your text and searches against it.
+            Takes a few seconds because it runs on CPU.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab: Profile -->
+      <div class="rec__panel" data-panel="profile">
+        <div class="rec__form">
+          <label class="rec__label mono">Movies you like (one per line)</label>
+          <textarea
+            id="profile-liked"
+            class="rec__textarea"
+            rows="4"
+            placeholder="The Matrix&#10;Interstellar&#10;Arrival"
+          ></textarea>
+
+          <label class="rec__label mono">Movies to avoid (optional, one per line)</label>
+          <textarea
+            id="profile-dislike"
+            class="rec__textarea"
+            rows="2"
+            placeholder="Transformers&#10;Fast & Furious"
+          ></textarea>
+
+          <label class="rec__label mono" for="profile-mood">Mood / context (optional)</label>
+          <input
+            id="profile-mood"
+            type="text"
+            class="rec__input"
+            placeholder="e.g. something chill for a Sunday evening"
+          />
+
+          <button class="btn btn--filled rec__submit" data-action="profile" style="margin-top:0.75rem">
+            Get profile recommendations
+          </button>
+          <p class="rec__hint">
+            Builds a taste profile from your picks, filters out what you don't want,
+            and blends in your mood if you feel like typing one.
+          </p>
+        </div>
+      </div>
+
+      <!-- Tab: Serendipity -->
+      <div class="rec__panel" data-panel="explore">
+        <div class="rec__form">
+          <label class="rec__label mono">Movies you like (one per line)</label>
+          <textarea
+            id="explore-liked"
+            class="rec__textarea"
+            rows="4"
+            placeholder="The Grand Budapest Hotel&#10;Parasite&#10;Knives Out"
+          ></textarea>
+          <button class="btn btn--filled rec__submit" data-action="explore" style="margin-top:0.75rem">
+            Surprise me
+          </button>
+          <p class="rec__hint">
+            Surfaces less obvious picks. Good for when you've watched everything
+            and want something you wouldn't have stumbled on yourself.
+          </p>
+        </div>
+      </div>
+
+      <!-- Job Status -->
+      <div class="rec__status" id="rec-status" style="display:none;">
+        <div class="rec__status-bar">
+          <div class="rec__status-fill" id="rec-status-fill"></div>
+        </div>
+        <div class="rec__status-text mono" id="rec-status-text">Queued...</div>
+      </div>
+
+      <!-- Results -->
+      <div class="rec__results" id="rec-results"></div>
+    </div>
+  </section>
+
+  <Footer />
+</Base>
+
+<style>
+  .rec {
+    padding: 1.5rem 0 3rem;
+  }
+
+  .rec__header { margin-bottom: 1.5rem; }
+  .rec__sub {
+    color: var(--text-dim);
+    margin-top: 0.35rem;
+    max-width: 480px;
+    line-height: 1.5;
+    font-size: 0.9rem;
+  }
+
+  /* Tabs */
+  .rec__tabs {
+    display: flex;
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    gap: 0;
+    border-bottom: var(--border-w) solid var(--border);
+    margin-bottom: 2rem;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .rec__tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .rec__tab {
+    padding: 0.6rem 1rem;
+    font-family: var(--font-sans);
+    font-size: 0.85rem;
+    font-weight: 600;
+    background: none;
+    border: none;
+    border-bottom: var(--border-w) solid transparent;
+    color: var(--text-dim);
+    cursor: pointer;
+    transition: color 0.15s, border-color 0.15s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .rec__tab:hover { color: var(--text); }
+  .rec__tab--active {
+    color: var(--accent);
+    border-bottom-color: var(--accent);
+  }
+
+  /* Panels */
+  .rec__panel { display: none; }
+  .rec__panel--active { display: block; }
+
+  .rec__form {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    max-width: 600px;
+  }
+
+  .rec__label {
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--text-mute);
+    margin-top: 0.5rem;
+  }
+
+  .rec__input-row {
+    display: flex;
+    gap: 0.5rem;
+  }
+
+  @media (max-width: 480px) {
+    .rec__input-row {
+      flex-direction: column;
+    }
+    .rec__input-row .btn {
+      width: 100%;
+      justify-content: center;
+    }
+  }
+
+  .rec__input,
+  .rec__textarea {
+    width: 100%;
+    padding: 0.65rem 0.85rem;
+    font-family: var(--font-mono);
+    font-size: 0.85rem;
+    background: var(--bg-raised);
+    border: var(--border-w) solid var(--border);
+    border-radius: var(--radius);
+    color: var(--text);
+    outline: none;
+    resize: vertical;
+  }
+
+  .rec__input:focus,
+  .rec__textarea:focus {
+    border-color: var(--accent);
+  }
+
+  .rec__textarea {
+    min-height: 80px;
+  }
+
+  .rec__hint {
+    font-size: 0.8rem;
+    color: var(--text-mute);
+    line-height: 1.5;
+    margin-top: 0.25rem;
+  }
+
+  /* Status */
+  .rec__status {
+    margin-top: 2rem;
+    max-width: 600px;
+  }
+
+  .rec__status-bar {
+    height: 3px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-bottom: 0.5rem;
+  }
+
+  .rec__status-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent);
+    border-radius: 2px;
+    transition: width 0.3s ease;
+  }
+
+  .rec__status-fill[data-status="running"] {
+    width: 60%;
+    animation: pulse 1.5s ease infinite;
+  }
+
+  .rec__status-fill[data-status="completed"] {
+    width: 100%;
+  }
+
+  .rec__status-fill[data-status="failed"] {
+    width: 100%;
+    background: var(--danger);
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.5; }
+  }
+
+  .rec__status-text {
+    font-size: 0.8rem;
+    color: var(--text-dim);
+  }
+
+  /* Results grid */
+  .rec__results {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+
+  @media (min-width: 480px) {
+    .rec__results {
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 1.25rem;
+    }
+  }
+
+  @media (min-width: 768px) {
+    .rec__results {
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    }
+  }
+</style>
+
+<script>
+  import gsap from 'gsap';
+  import {
+    recommendSimilar,
+    recommendQuery,
+    recommendProfile,
+    recommendExplore,
+    pollJob,
+    movieId,
+    posterUrl,
+  } from '../lib/api';
+  import type { MovieResult } from '../lib/api';
+
+  // --- Tab switching ---
+  const tabs = document.querySelectorAll('.rec__tab');
+  const panels = document.querySelectorAll('.rec__panel');
+
+  tabs.forEach((tab) => {
+    tab.addEventListener('click', () => {
+      tabs.forEach((t) => t.classList.remove('rec__tab--active'));
+      panels.forEach((p) => p.classList.remove('rec__panel--active'));
+      tab.classList.add('rec__tab--active');
+      const target = tab.getAttribute('data-tab');
+      document.querySelector(`[data-panel="${target}"]`)?.classList.add('rec__panel--active');
+    });
+  });
+
+  // --- Status UI ---
+  const statusWrap = document.getElementById('rec-status') as HTMLDivElement;
+  const statusFill = document.getElementById('rec-status-fill') as HTMLDivElement;
+  const statusText = document.getElementById('rec-status-text') as HTMLDivElement;
+  const resultsGrid = document.getElementById('rec-results') as HTMLDivElement;
+
+  function showStatus(msg: string, phase: string) {
+    statusWrap.style.display = 'block';
+    statusText.textContent = msg;
+    statusFill.setAttribute('data-status', phase);
+    if (phase === 'queued' || phase === 'running') {
+      statusFill.style.width = phase === 'running' ? '60%' : '30%';
+    }
+  }
+
+  function hideStatus() {
+    statusWrap.style.display = 'none';
+    statusFill.removeAttribute('data-status');
+    statusFill.style.width = '0%';
+  }
+
+  function renderResults(movies: MovieResult[]) {
+    resultsGrid.innerHTML = '';
+    if (movies.length === 0) {
+      resultsGrid.innerHTML = '<p style="color:var(--text-mute)">No results found.</p>';
+      return;
+    }
+
+    for (const m of movies) {
+      const mid = movieId(m);
+      const pUrl = posterUrl(m);
+      const card = document.createElement('article');
+      card.className = 'mcard';
+      const matchPct = m.score ? Math.round(m.score * 100) : null;
+      card.innerHTML = `
+        <a href="https://www.themoviedb.org/movie/${mid}" target="_blank" rel="noopener" class="mcard__poster-wrap">
+          ${m.rank ? `<span class="mcard__rank mono">${m.rank}</span>` : ''}
+          <img
+            class="mcard__poster"
+            src="${pUrl}"
+            alt="Poster for ${m.title}"
+            loading="lazy"
+            onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 width=%22342%22 height=%22513%22 fill=%22%231a1a1a%22%3E%3Crect width=%22342%22 height=%22513%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 dominant-baseline=%22middle%22 text-anchor=%22middle%22 fill=%22%23555%22 font-family=%22monospace%22 font-size=%2214%22%3ENo Poster%3C/text%3E%3C/svg%3E'"
+          />
+          ${matchPct !== null ? `<span class="mcard__match">${matchPct}%</span>` : ''}
+        </a>
+        <div class="mcard__info">
+          <h3 class="mcard__title">${m.title}</h3>
+          <div class="mcard__meta">
+            ${m.year ? `<span class="mono">${m.year}</span>` : ''}
+            ${m.year && m.vote_average ? '<span class="mcard__dot">·</span>' : ''}
+            ${m.vote_average ? `<span class="mono">${m.vote_average.toFixed(1)}</span>` : ''}
+            <span class="mcard__dot">·</span>
+            <span class="tag tag--accent">${m.primary_genre || 'Film'}</span>
+          </div>
+        </div>
+      `;
+      resultsGrid.appendChild(card);
+    }
+
+    gsap.from(resultsGrid.querySelectorAll('.mcard'), {
+      y: 30,
+      opacity: 0,
+      duration: 0.4,
+      stagger: 0.05,
+      ease: 'power2.out',
+    });
+  }
+
+  // --- Submit handler ---
+  async function handleSubmit(action: string) {
+    let job;
+
+    try {
+      switch (action) {
+        case 'similar': {
+          const title = (document.getElementById('similar-title') as HTMLInputElement).value.trim();
+          if (!title) return;
+          job = await recommendSimilar(title);
+          break;
+        }
+        case 'query': {
+          const query = (document.getElementById('query-text') as HTMLInputElement).value.trim();
+          if (!query) return;
+          job = await recommendQuery(query);
+          break;
+        }
+        case 'profile': {
+          const liked = (document.getElementById('profile-liked') as HTMLTextAreaElement).value
+            .split('\n').map((s) => s.trim()).filter(Boolean);
+          const dislike = (document.getElementById('profile-dislike') as HTMLTextAreaElement).value
+            .split('\n').map((s) => s.trim()).filter(Boolean);
+          const mood = (document.getElementById('profile-mood') as HTMLInputElement).value.trim();
+          if (liked.length === 0) return;
+          job = await recommendProfile({ liked, dislike: dislike.length ? dislike : undefined, mood: mood || undefined });
+          break;
+        }
+        case 'explore': {
+          const liked = (document.getElementById('explore-liked') as HTMLTextAreaElement).value
+            .split('\n').map((s) => s.trim()).filter(Boolean);
+          if (liked.length === 0) return;
+          job = await recommendExplore(liked);
+          break;
+        }
+        default: return;
+      }
+
+      // Sync mode: results come directly (no Redis / local dev)
+      if (job.mode === 'sync') {
+        const results = job.results || [];
+        const elapsed = job.elapsed_seconds || 0;
+        showStatus(`Done: ${results.length} results in ${elapsed}s`, 'completed');
+        renderResults(results);
+        setTimeout(hideStatus, 2000);
+        return;
+      }
+
+      // Queue mode: poll for results (Redis available)
+      showStatus(`Queued: ${job.message}`, 'queued');
+
+      const results = await pollJob(
+        job.job_id!, 
+        (status) => {
+          const elapsed = status.started_at
+            ? ((Date.now() / 1000) - status.started_at).toFixed(1)
+            : '0';
+          if (status.status === 'running') {
+            showStatus(`Running... (${elapsed}s)`, 'running');
+          }
+        },
+        20000,
+        500,
+      );
+
+      showStatus(`Done: ${results.length} results`, 'completed');
+      renderResults(results);
+
+      setTimeout(hideStatus, 2000);
+    } catch (e) {
+      showStatus(`Error: ${e instanceof Error ? e.message : 'Unknown error'}`, 'failed');
+    }
+  }
+
+  // Attach click handlers
+  document.querySelectorAll('.rec__submit').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const action = btn.getAttribute('data-action');
+      if (action) handleSubmit(action);
+    });
+  });
+
+  // Enter key on inputs
+  ['similar-title', 'query-text'].forEach((id) => {
+    document.getElementById(id)?.addEventListener('keydown', (e) => {
+      if ((e as KeyboardEvent).key === 'Enter') {
+        const action = (e.target as HTMLElement).closest('.rec__panel')?.querySelector('.rec__submit')?.getAttribute('data-action');
+        if (action) handleSubmit(action);
+      }
+    });
+  });
+
+  // Deep-link support: read ?mode= and ?q= from URL, then auto-submit
+  const params = new URLSearchParams(window.location.search);
+  const mode = params.get('mode');
+  const q = params.get('q');
+
+  if (mode) {
+    const targetTab = document.querySelector(`.rec__tab[data-tab="${mode}"]`) as HTMLElement | null;
+    if (targetTab) {
+      targetTab.click();
+    }
+  }
+
+  if (q) {
+    const activePanel = document.querySelector('.rec__panel--active');
+    const tabId = activePanel?.getAttribute('data-panel');
+    if (tabId === 'similar') {
+      const input = document.getElementById('similar-title') as HTMLInputElement;
+      if (input) input.value = q;
+    } else if (tabId === 'query') {
+      const input = document.getElementById('query-text') as HTMLInputElement;
+      if (input) input.value = q;
+    }
+
+    // Auto-submit after a short delay to ensure tab switch is complete
+    setTimeout(() => {
+      const activePanelNow = document.querySelector('.rec__panel--active');
+      const submitBtn = activePanelNow?.querySelector('.rec__submit') as HTMLButtonElement | null;
+      const action = submitBtn?.getAttribute('data-action');
+      if (action) handleSubmit(action);
+    }, 100);
+  }
+</script>

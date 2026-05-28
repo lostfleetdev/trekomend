@@ -129,6 +129,10 @@ class RateLimitMiddleware(BaseHTTPMiddleware):
         if request.url.path in ("/api/health",):
             return await call_next(request)
 
+        # Skip rate limiting entirely when Redis is unavailable (local dev)
+        if not self._redis:
+            return await call_next(request)
+
         ip = self._get_client_ip(request)
 
         if self._redis:

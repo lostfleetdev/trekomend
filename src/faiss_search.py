@@ -258,35 +258,30 @@ class FaissSearcher:
         tmdb_to_movie = self._lookup_movies_batch(tmdb_ids)
 
         # Build results preserving FAISS rank order
+        # Skip movies not found in DB (filtered out adult content or missing)
         results = []
-        for rank, (tmdb_id, dist) in enumerate(zip(tmdb_ids, distances[0]), 1):
+        rank = 0
+        for tmdb_id, dist in zip(tmdb_ids, distances[0]):
             tid = int(tmdb_id)
             movie = tmdb_to_movie.get(tid)
 
             if movie is None:
-                results.append({
-                    "rank": rank,
-                    "tmdb_id": tid,
-                    "title": f"TMDB #{tid}",
-                    "primary_genre": "Unknown",
-                    "genres": "",
-                    "year": None,
-                    "overview": "",
-                    "vote_average": None,
-                    "score": round(float(dist), 4),
-                })
-            else:
-                results.append({
-                    "rank": rank,
-                    "tmdb_id": tid,
-                    "title": movie["title"],
-                    "primary_genre": movie["primary_genre"],
-                    "genres": movie["genres"],
-                    "year": movie["year"],
-                    "overview": movie["overview"],
-                    "vote_average": movie["vote_average"],
-                    "score": round(float(dist), 4),
-                })
+                continue
+
+            rank += 1
+            results.append({
+                "rank": rank,
+                "tmdb_id": tid,
+                "title": movie["title"],
+                "primary_genre": movie["primary_genre"],
+                "genres": movie["genres"],
+                "year": movie["year"],
+                "overview": movie["overview"],
+                "vote_average": movie["vote_average"],
+                "poster_path": movie.get("poster_path"),
+                "backdrop_path": movie.get("backdrop_path"),
+                "score": round(float(dist), 4),
+            })
 
         return results
 
@@ -299,11 +294,11 @@ class FaissSearcher:
 
         if exact:
             row = self._db.execute(
-                "SELECT * FROM movies WHERE title = ? LIMIT 1", (title,)
+                "SELECT * FROM movies WHERE title = ? AND adult != 'True' LIMIT 1", (title,)
             ).fetchone()
         else:
             row = self._db.execute(
-                "SELECT * FROM movies WHERE title LIKE ? LIMIT 1",
+                "SELECT * FROM movies WHERE title LIKE ? AND adult != 'True' LIMIT 1",
                 (f"%{title}%",),
             ).fetchone()
 
@@ -471,6 +466,7 @@ class FaissSearcher:
                 FROM movies m
                 JOIN movies_fts fts ON m.id = fts.rowid
                 WHERE movies_fts MATCH ?
+                  AND m.adult != 'True'
                 ORDER BY rank
                 LIMIT ?
                 """,
@@ -482,7 +478,8 @@ class FaissSearcher:
             rows = self._db.execute(
                 """
                 SELECT * FROM movies
-                WHERE title LIKE ? OR overview LIKE ?
+                WHERE (title LIKE ? OR overview LIKE ?)
+                  AND adult != 'True'
                 ORDER BY popularity DESC
                 LIMIT ?
                 """,
@@ -507,7 +504,7 @@ class FaissSearcher:
         if not self._loaded:
             self.load()
 
-        query = "SELECT * FROM movies WHERE 1=1"
+        query = "SELECT * FROM movies WHERE adult != 'True'"
         params: list[Any] = []
 
         if genre:
@@ -533,11 +530,11 @@ class FaissSearcher:
         return [self._row_to_dict(r) for r in rows]
 
     def get_genres(self) -> list[str]:
-        """Get all distinct primary genres."""
+        """Get all distinct primary genres (excluding adult content)."""
         if not self._loaded:
             self.load()
         rows = self._db.execute(
-            "SELECT DISTINCT primary_genre FROM movies ORDER BY primary_genre"
+            "SELECT DISTINCT primary_genre FROM movies WHERE adult != 'True' ORDER BY primary_genre"
         ).fetchall()
         return [r["primary_genre"] for r in rows]
 
@@ -587,7 +584,7 @@ class FaissSearcher:
         # Build parameterised IN clause safely
         placeholders = ",".join(["?"] * len(unique_ids))
         rows = self._db.execute(
-            f"SELECT * FROM movies WHERE id IN ({placeholders})",
+            f"SELECT * FROM movies WHERE id IN ({placeholders}) AND adult != 'True'",
             unique_ids,
         ).fetchall()
 
@@ -604,11 +601,14 @@ class FaissSearcher:
             self.load()
 
         db_count = self._db.execute("SELECT COUNT(*) FROM movies").fetchone()[0]
+        db_clean = self._db.execute("SELECT COUNT(*) FROM movies WHERE adult != 'True'").fetchone()[0]
         return {
             "faiss_vectors": self._ntotal,
             "faiss_dim": self._dim,
             "faiss_nprobe": self._index.nprobe,
-            "db_movies": db_count,
+            "db_movies": db_clean,
+            "db_movies_total": db_count,
+            "adult_filtered": db_count - db_clean,
         }
 
 

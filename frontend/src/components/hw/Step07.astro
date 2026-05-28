@@ -1,0 +1,38 @@
+<div class="hw-step">
+  <div class="hw-step__marker"><span class="hw-step__num">07</span><svg class="hw-step__icon" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="3" width="20" height="18" rx="2" fill="none" stroke="#b4ff39" stroke-width="1.5"/><line x1="6" y1="7" x2="6" y2="7" stroke="#b4ff39" stroke-width="2" stroke-linecap="round"/><line x1="9" y1="7" x2="18" y2="7" stroke="#555" stroke-width="1"/><line x1="6" y1="11" x2="6" y2="11" stroke="#b4ff39" stroke-width="2" stroke-linecap="round"/><line x1="9" y1="11" x2="18" y2="11" stroke="#555" stroke-width="1"/><line x1="6" y1="15" x2="6" y2="15" stroke="#b4ff39" stroke-width="2" stroke-linecap="round"/><line x1="9" y1="15" x2="14" y2="15" stroke="#555" stroke-width="1"/></svg></div>
+  <div class="hw-step__body">
+    <h2>Talking to the engine</h2>
+    <p>The server exposes a REST API over FastAPI. No auth, no keys, no rate limits. Just POST your query and get back results. Title-based searches work out of the box. Text queries and mood blending need Ollama running locally with the Qwen3-Embedding model.</p>
+    <div class="hw-api-example">
+      <div class="hw-api-example__req"><span class="hw-api-example__label mono">POST /recommend/similar</span><pre class="hw-api-example__code"><code>{'{'}
+  "title": "Inception",
+  "limit": 12
+{'}'}</code></pre></div>
+      <svg class="hw-api-example__arr" viewBox="0 0 24 40" width="24" height="40" fill="none"><path d="M12 0 v28" stroke="#2a2a2a" stroke-width="1.5"/><path d="M6 26 l6 6 6-6" fill="none" stroke="#b4ff39" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <div class="hw-api-example__res"><span class="hw-api-example__label mono">200 OK (one result of 12)</span><pre class="hw-api-example__code"><code>{'{'}
+  "rank": 1,
+  "title": "Interstellar",
+  "primary_genre": "Science Fiction",
+  "genres": "Sci-Fi, Adventure, Drama",
+  "year": 2014,
+  "vote_average": 8.4,
+  "score": 0.892
+{'}'}</code></pre></div>
+    </div>
+    <h3 class="hw-subtitle">All endpoints</h3>
+    <div class="hw-endpoint-grid">
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--get">GET</span><span class="hw-ep__path mono">/health</span><span class="hw-ep__about">liveness check</span></div>
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--get">GET</span><span class="hw-ep__path mono">/stats</span><span class="hw-ep__about">index and DB counts</span></div>
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--post">POST</span><span class="hw-ep__path mono">/recommend/similar</span><span class="hw-ep__about">movies like a title</span></div>
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--post">POST</span><span class="hw-ep__path mono">/recommend/query</span><span class="hw-ep__about">movies matching text</span></div>
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--post">POST</span><span class="hw-ep__path mono">/recommend/profile</span><span class="hw-ep__about">taste profile search</span></div>
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--post">POST</span><span class="hw-ep__path mono">/recommend/diverse</span><span class="hw-ep__about">max diversity with DPP</span></div>
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--post">POST</span><span class="hw-ep__path mono">/recommend/explore</span><span class="hw-ep__about">serendipity mode</span></div>
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--get">GET</span><span class="hw-ep__path mono">/movies/{'{'}id{'}'}</span><span class="hw-ep__about">single movie</span></div>
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--get">GET</span><span class="hw-ep__path mono">/movies/search?q=</span><span class="hw-ep__about">FTS5 search</span></div>
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--get">GET</span><span class="hw-ep__path mono">/movies/browse?genre=</span><span class="hw-ep__about">filtered browse</span></div>
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--get">GET</span><span class="hw-ep__path mono">/movies/genres</span><span class="hw-ep__about">all genres</span></div>
+      <div class="hw-ep"><span class="hw-ep__method mono hw-ep__method--get">GET</span><span class="hw-ep__path mono">/ranker/features</span><span class="hw-ep__about">feature importance</span></div>
+    </div>
+  </div>
+</div>
