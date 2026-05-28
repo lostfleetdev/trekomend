@@ -1,6 +1,7 @@
 """
 Shared settings for trekomend.
 """
+import os
 from pathlib import Path
 
 # Data paths (large files hosted on HuggingFace, not in git)
@@ -59,3 +60,13 @@ DPP_CANDIDATE_POOL = 50
 GENRE_MAX_PER_GENRE = 3
 GENRE_MIN_UNIQUE = 3
 SERENDIPITY_POSITION = 7
+
+# Redis / job queue settings
+REDIS_URL = os.environ.get("TREKOMEND_REDIS_URL", "redis://127.0.0.1:6379/0")
+JOB_TTL_SECONDS = 300          # Jobs expire after 5 minutes
+JOB_POLL_INTERVAL_MS = 500     # Frontend polls every 500ms
+WORKER_POLL_TIMEOUT = 1        # BLPOP timeout in seconds
+RATE_LIMIT_PER_MINUTE = 60     # Per-IP requests per minute
+
+# Production mode — disable /docs, /redoc, /openapi.json
+PRODUCTION_MODE = os.environ.get("TREKOMEND_PRODUCTION", "0").lower() in ("1", "true", "yes")

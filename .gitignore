@@ -8,7 +8,8 @@ wheels/
 
 # Virtual environments
 .venv
-
+*.key
+*.pem
 # Local secrets
 .env
 .env.*
@@ -22,6 +23,14 @@ embeddings/
 # Generated plots / temp output
 *.png
 verification_results.json
-
+PLAN.md
 # IDE / tooling
 .commandcode/
+
+# Frontend build output
+frontend/dist/
+frontend/node_modules/
+frontend/.astro/
+
+# Redis dump
+dump.rdb
